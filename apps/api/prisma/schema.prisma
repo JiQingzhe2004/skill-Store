@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum EmailCodePurpose {
+  REGISTER
+  RESET_PASSWORD
+}
+
+model User {
+  id              String      @id @default(cuid()) @db.VarChar(191)
+  email           String      @unique @db.VarChar(191)
+  username        String      @db.VarChar(32)
+  passwordHash    String      @map("password_hash") @db.VarChar(255)
+  isEmailVerified Boolean     @default(false) @map("is_email_verified")
+  role            UserRole    @default(USER)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  lastLoginAt     DateTime?   @map("last_login_at")
+  emailCodes      EmailCode[]
+
+  @@map("users")
+}
+
+model EmailCode {
+  id        String           @id @default(cuid()) @db.VarChar(191)
+  userId    String           @map("user_id") @db.VarChar(191)
+  purpose   EmailCodePurpose
+  code      String           @db.VarChar(6)
+  expiresAt DateTime         @map("expires_at")
+  usedAt    DateTime?        @map("used_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt])
+  @@map("email_codes")
+}

@@ -1,0 +1,26 @@
+{
+  "name": "skill-store",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.5.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api -c green,blue \"pnpm --filter @skill-store/web dev\" \"pnpm --filter @skill-store/api dev\"",
+    "dev:web": "pnpm --filter @skill-store/web dev",
+    "dev:api": "pnpm --filter @skill-store/api dev",
+    "db:up": "docker compose up -d mysql mailhog",
+    "db:down": "docker compose down",
+    "prisma:generate": "pnpm --filter @skill-store/api prisma:generate",
+    "prisma:migrate:dev": "pnpm --filter @skill-store/api prisma:migrate:dev",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.8"
+  }
+}
