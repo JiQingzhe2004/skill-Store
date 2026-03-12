@@ -7,9 +7,14 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import { AuthCard } from '../../components/auth-card'
-import { FormField } from '../../components/form-field'
+import { Alert, AlertDescription } from '../../components/ui/alert'
+import { Badge } from '../../components/ui/badge'
+import { Button } from '../../components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card'
+import { Input } from '../../components/ui/input'
+import { Label } from '../../components/ui/label'
 import { apiRequest, getErrorMessage } from '../../lib/api'
+import { messages } from '../../messages'
 
 export function LoginForm() {
   const router = useRouter()
@@ -28,6 +33,7 @@ export function LoginForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     setErrorMessage('')
+
     const payload = await apiRequest<{ user: AuthUser; message: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(values),
@@ -43,34 +49,59 @@ export function LoginForm() {
   })
 
   return (
-    <AuthCard
-      title="登录"
-      description="使用邮箱和密码登录 Skill Store。"
-      links={[
-        { href: '/register', label: '没有账号？去注册' },
-        { href: '/forgot-password', label: '忘记密码' },
-      ]}
-    >
-      <form className="form-grid" onSubmit={onSubmit}>
-        <FormField id="email" label="邮箱" type="email" autoComplete="email" error={errors.email?.message} {...register('email')} />
-        <FormField
-          id="password"
-          label="密码"
-          type="password"
-          autoComplete="current-password"
-          error={errors.password?.message}
-          {...register('password')}
-        />
+    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <Card size="sm" className="border-border/60 bg-background/95 shadow-lg backdrop-blur">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{messages.common.brandAuth}</Badge>
+            </div>
+            <CardTitle className="text-2xl">{messages.login.title}</CardTitle>
+            <CardDescription className="leading-6">{messages.login.description}</CardDescription>
+          </CardHeader>
 
-        {errorMessage ? <div className="status-error">{errorMessage}</div> : null}
+          <CardContent>
+            <form className="grid gap-4" onSubmit={onSubmit}>
+              <div className="grid gap-2">
+                <Label htmlFor="email">{messages.common.email}</Label>
+                <Input id="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email?.message)} {...register('email')} />
+                {errors.email?.message ? <p className="text-xs text-destructive">{errors.email.message}</p> : null}
+              </div>
 
-        <div className="actions">
-          <button className="primary-button" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? '登录中...' : '登录'}
-          </button>
-          <Link href="/forgot-password">忘记密码？</Link>
-        </div>
-      </form>
-    </AuthCard>
+              <div className="grid gap-2">
+                <Label htmlFor="password">{messages.common.password}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  aria-invalid={Boolean(errors.password?.message)}
+                  {...register('password')}
+                />
+                {errors.password?.message ? <p className="text-xs text-destructive">{errors.password.message}</p> : null}
+              </div>
+
+              {errorMessage ? (
+                <Alert variant="destructive">
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
+              ) : null}
+
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? messages.login.submitting : messages.login.submit}
+              </Button>
+            </form>
+          </CardContent>
+
+          <CardFooter className="flex flex-wrap justify-center gap-4 border-t pt-4 text-sm text-muted-foreground">
+            <Link href="/register" className="transition-colors hover:text-foreground hover:underline">
+              {messages.common.createAccount}
+            </Link>
+            <Link href="/forgot-password" className="transition-colors hover:text-foreground hover:underline">
+              {messages.login.resetPassword}
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    </main>
   )
 }

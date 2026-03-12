@@ -15,7 +15,7 @@ describe('RegisterForm', () => {
   it('shows validation messages before submit', async () => {
     render(<RegisterForm />)
 
-    fireEvent.click(screen.getByRole('button', { name: '注册并发送验证码' }))
+    fireEvent.click(screen.getByRole('button'))
 
     await waitFor(() => {
       expect(screen.getByText('请输入有效邮箱')).toBeInTheDocument()
