@@ -6,8 +6,8 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:generate": "node ../../scripts/prisma-runner.mjs generate",
+    "prisma:migrate:dev": "node ../../scripts/prisma-runner.mjs migrate dev",
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {

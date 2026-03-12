@@ -23,6 +23,13 @@
 5. 执行迁移：`pnpm prisma:migrate:dev`
 6. 启动开发环境：`pnpm dev`
 
+说明：`Prisma` 命令会自动读取仓库根目录的 `.env`，不需要再额外复制一份到 `apps/api`。
+
+如果你之前已经启动过 MySQL 容器，新增的 shadow database 初始化脚本不会自动补跑。此时需要二选一：
+
+- 重建本地 MySQL 数据卷：`docker compose down -v` 后再执行 `pnpm db:up`
+- 或手动执行一次建库和授权，把 `skill_store_shadow` 建出来
+
 ## 默认端口
 
 - Web：`3000`
