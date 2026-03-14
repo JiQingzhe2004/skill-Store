@@ -55,7 +55,7 @@ export default async function SkillDetailPage({ params }: Props) {
         <section className="py-10 px-6 max-w-4xl mx-auto">
           {/* Back */}
           <Button variant="ghost" size="sm" asChild className="mb-6">
-            <Link href="/marketplace">
+            <Link href="/skills">
               <ArrowLeft className="w-4 h-4 mr-1.5" />
               返回市场
             </Link>

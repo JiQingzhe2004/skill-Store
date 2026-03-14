@@ -125,7 +125,7 @@ export default async function MarketplacePage({ searchParams }: Props) {
                 <div className="flex justify-center gap-2 mt-10">
                   {page > 1 && (
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/marketplace?page=${page - 1}`}>上一页</Link>
+                      <Link href={`/skills?page=${page - 1}`}>上一页</Link>
                     </Button>
                   )}
                   <span className="flex items-center px-3 text-sm text-muted-foreground">
@@ -133,7 +133,7 @@ export default async function MarketplacePage({ searchParams }: Props) {
                   </span>
                   {page < totalPages && (
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/marketplace?page=${page + 1}`}>下一页</Link>
+                      <Link href={`/skills?page=${page + 1}`}>下一页</Link>
                     </Button>
                   )}
                 </div>

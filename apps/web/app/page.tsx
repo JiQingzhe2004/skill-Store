@@ -52,7 +52,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
             <div className="flex gap-3 justify-center flex-wrap">
               <Button size="lg" asChild className="group transition-all duration-200 hover:shadow-md">
-                <Link href="/marketplace">
+                <Link href="/skills">
                   <Store className="w-4 h-4 mr-2" />
                   {m.ctaBrowse}
                   <ArrowRight className="w-3.5 h-3.5 ml-2 transition-transform group-hover:translate-x-0.5" />
