@@ -70,6 +70,7 @@ services:
     environment:
       NODE_ENV: development
       NEXT_PUBLIC_API_URL: http://localhost:3001
+      API_BASE_URL: http://api:3001
       WATCHPACK_POLLING: "true"
     ports:
       - "3000:3000"
