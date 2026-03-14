@@ -133,6 +133,42 @@ export class SkillsService {
     return updatedVersion
   }
 
+  /* ─── 星标 ─── */
+  async toggleStar(slug: string, userId: string) {
+    const skill = await this.prisma.skill.findUnique({ where: { slug }, select: { id: true } })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+    const existing = await this.prisma.skillStar.findUnique({
+      where: { userId_skillId: { userId, skillId: skill.id } },
+    })
+    if (existing) {
+      await this.prisma.skillStar.delete({ where: { userId_skillId: { userId, skillId: skill.id } } })
+      await this.prisma.skill.update({ where: { id: skill.id }, data: { starCount: { decrement: 1 } } })
+      return { starred: false }
+    } else {
+      await this.prisma.skillStar.create({ data: { userId, skillId: skill.id } })
+      await this.prisma.skill.update({ where: { id: skill.id }, data: { starCount: { increment: 1 } } })
+      return { starred: true }
+    }
+  }
+
+  /* ─── 点赞 ─── */
+  async toggleLike(slug: string, userId: string) {
+    const skill = await this.prisma.skill.findUnique({ where: { slug }, select: { id: true } })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+    const existing = await this.prisma.skillLike.findUnique({
+      where: { userId_skillId: { userId, skillId: skill.id } },
+    })
+    if (existing) {
+      await this.prisma.skillLike.delete({ where: { userId_skillId: { userId, skillId: skill.id } } })
+      await this.prisma.skill.update({ where: { id: skill.id }, data: { likeCount: { decrement: 1 } } })
+      return { liked: false }
+    } else {
+      await this.prisma.skillLike.create({ data: { userId, skillId: skill.id } })
+      await this.prisma.skill.update({ where: { id: skill.id }, data: { likeCount: { increment: 1 } } })
+      return { liked: true }
+    }
+  }
+
   /* ─── 版本列表 ─── */
   async findVersions(skillId: string, authorId: string) {
     await this.findOneOwned(skillId, authorId)
@@ -153,6 +189,7 @@ export class SkillsService {
       select: {
         id: true, slug: true, name: true, description: true,
         tags: true, latestVersion: true, visibility: true, status: true,
+        downloadCount: true, starCount: true, likeCount: true,
         createdAt: true, updatedAt: true,
         author: { select: { username: true, avatar: true } },
         versions: {

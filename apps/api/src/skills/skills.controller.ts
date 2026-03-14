@@ -81,6 +81,20 @@ export class SkillsController {
     return this.skillsService.findVersions(id, user.sub)
   }
 
+  /* ─── 互动接口（公开，需登录）─── */
+
+  @UseGuards(AccessTokenGuard)
+  @Post('public/:slug/star')
+  toggleStar(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.toggleStar(slug, user.sub)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('public/:slug/like')
+  toggleLike(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.toggleLike(slug, user.sub)
+  }
+
   @UseGuards(AccessTokenGuard)
   @Post(':id/versions/:versionId/publish')
   publishVersion(

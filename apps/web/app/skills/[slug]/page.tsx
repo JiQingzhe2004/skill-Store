@@ -1,13 +1,14 @@
 import { headers, cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, User, Tag, Clock, CheckCircle2, Store, Download } from 'lucide-react'
+import { ArrowLeft, User, Tag, Clock, Store } from 'lucide-react'
 import { SiteNav } from '../../../components/site-nav'
 import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card'
 import { fetchCurrentUser } from '../../../lib/server-auth'
 import { serverApiRequest } from '../../../lib/server-api'
+import { SkillActions } from './skill-actions'
 
 type SkillDetail = {
   id: string
@@ -20,7 +21,10 @@ type SkillDetail = {
   status: string
   createdAt: string
   updatedAt: string
-  author: { username: string }
+  downloadCount: number
+  starCount: number
+  likeCount: number
+  author: { username: string; avatar?: string | null }
   versions: {
     id: string
     version: string
@@ -90,11 +94,13 @@ export default async function SkillDetailPage({ params }: Props) {
                     </div>
                   </div>
                 </div>
-                {/* Install button placeholder */}
-                <Button size="lg" className="shrink-0">
-                  <Download className="w-4 h-4 mr-2" />
-                  安装
-                </Button>
+                <SkillActions
+                  slug={skill.slug}
+                  initialStarCount={skill.starCount}
+                  initialLikeCount={skill.likeCount}
+                  initialDownloadCount={skill.downloadCount}
+                  isLoggedIn={!!user}
+                />
               </div>
             </CardHeader>
             {tags.length > 0 && (
