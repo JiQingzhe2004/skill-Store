@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: skill-store-mysql
+    container_name: skill-store-mysql-dev
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -11,8 +11,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - mysql_logs:/var/log/mysql
+      - mysql_data_dev:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d
     command: ["mysqld", "--mysql-native-password=ON"]
     networks:
@@ -23,20 +22,30 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: skill-store-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - skill-store-network
+
   api:
     build:
       context: .
-      dockerfile: apps/api/Dockerfile
-    container_name: skill-store-api
+      dockerfile: apps/api/Dockerfile.dev
+    container_name: skill-store-api-dev
     restart: unless-stopped
     env_file:
-      - apps/api/.env.production
+      - apps/api/.env
     environment:
       DATABASE_URL: mysql://skill_store:skill_store@mysql:3306/skill_store
       SHADOW_DATABASE_URL: mysql://skill_store:skill_store@mysql:3306/skill_store_shadow
-      SMTP_HOST: smtp
-      SMTP_PORT: "25"
-      NODE_ENV: production
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      NODE_ENV: development
     ports:
       - "3001:3001"
     depends_on:
@@ -45,28 +54,40 @@ services:
     networks:
       - skill-store-network
     volumes:
-      - api_logs:/app/logs
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/prisma:/app/apps/api/prisma
+      - ./packages/shared:/app/packages/shared
+      # anonymous volume to protect container's node_modules
+      - /app/node_modules
+      - /app/apps/api/node_modules
 
   web:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile
-    container_name: skill-store-web
+      dockerfile: apps/web/Dockerfile.dev
+    container_name: skill-store-web-dev
     restart: unless-stopped
     environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://api:3001
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      WATCHPACK_POLLING: "true"
     ports:
       - "3000:3000"
     depends_on:
       - api
     networks:
       - skill-store-network
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/public:/app/apps/web/public
+      - ./packages/shared:/app/packages/shared
+      # anonymous volume to protect container's node_modules
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
 
 volumes:
-  mysql_data:
-  mysql_logs:
-  api_logs:
+  mysql_data_dev:
 
 networks:
   skill-store-network:
