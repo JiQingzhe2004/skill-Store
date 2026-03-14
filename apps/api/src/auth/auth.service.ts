@@ -141,6 +141,17 @@ export class AuthService {
       throw new AppException(HttpStatus.FORBIDDEN, 'EMAIL_NOT_VERIFIED', '请先完成邮箱验证')
     }
 
+    if (user.isBanned) {
+      const until = user.bannedUntil
+      if (!until || until > new Date()) {
+        const untilStr = until ? `（解封时间：${until.toLocaleString('zh-CN')}）` : '（永久封禁）'
+        const reason = user.banReason ? ` 原因：${user.banReason}` : ''
+        throw new AppException(HttpStatus.FORBIDDEN, 'USER_BANNED', `账号已被封禁${untilStr}${reason}`)
+      }
+      // 封禁已到期，自动解封
+      await this.prisma.user.update({ where: { id: user.id }, data: { isBanned: false, bannedUntil: null, banReason: null } })
+    }
+
     await this.prisma.user.update({
       where: { id: user.id },
       data: {

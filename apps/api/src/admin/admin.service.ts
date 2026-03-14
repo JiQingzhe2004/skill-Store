@@ -42,13 +42,34 @@ export class AdminService {
         select: {
           id: true, email: true, username: true, role: true,
           isEmailVerified: true, createdAt: true,
-          avatar: true,
+          avatar: true, isBanned: true, bannedUntil: true, banReason: true,
           _count: { select: { skills: true } },
         },
       }),
       this.prisma.user.count({ where }),
     ])
     return { items, total, page, pageSize }
+  }
+
+  /* ─── 封禁用户 ─── */
+  async banUser(userId: string, durationHours: number, reason?: string) {
+    const bannedUntil = durationHours > 0
+      ? new Date(Date.now() + durationHours * 60 * 60 * 1000)
+      : null // null = 永久封禁
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { isBanned: true, bannedUntil, banReason: reason ?? null },
+      select: { id: true, username: true, isBanned: true, bannedUntil: true, banReason: true },
+    })
+  }
+
+  /* ─── 解封用户 ─── */
+  async unbanUser(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { isBanned: false, bannedUntil: null, banReason: null },
+      select: { id: true, username: true, isBanned: true },
+    })
   }
 
   /* ─── 修改用户角色 ─── */

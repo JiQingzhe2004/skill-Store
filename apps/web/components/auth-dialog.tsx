@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
@@ -34,6 +34,14 @@ type AuthDialogProps = {
 export function AuthDialog({ open, onOpenChange, defaultView = 'login', defaultEmail = '' }: AuthDialogProps) {
   const [view, setView] = useState<AuthView>(defaultView)
   const [carryEmail, setCarryEmail] = useState(defaultEmail)
+
+  // 每次打开弹窗时同步外部传入的 view
+  useEffect(() => {
+    if (open) {
+      setView(defaultView)
+      if (defaultEmail) setCarryEmail(defaultEmail)
+    }
+  }, [open, defaultView, defaultEmail])
 
   const handleSuccess = () => {
     onOpenChange(false)

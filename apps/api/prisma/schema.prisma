@@ -27,6 +27,9 @@ model User {
   role            UserRole    @default(USER)
   avatar          String?     @db.LongText
   bio             String?     @db.VarChar(200)
+  isBanned        Boolean     @default(false) @map("is_banned")
+  bannedUntil     DateTime?   @map("banned_until")
+  banReason       String?     @db.VarChar(256) @map("ban_reason")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   lastLoginAt     DateTime?   @map("last_login_at")

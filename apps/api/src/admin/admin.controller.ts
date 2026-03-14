@@ -31,6 +31,20 @@ export class AdminController {
     )
   }
 
+  @Patch('users/:id/ban')
+  banUser(
+    @Param('id') id: string,
+    @Body('durationHours') durationHours: number,
+    @Body('reason') reason?: string,
+  ) {
+    return this.adminService.banUser(id, durationHours, reason)
+  }
+
+  @Patch('users/:id/unban')
+  unbanUser(@Param('id') id: string) {
+    return this.adminService.unbanUser(id)
+  }
+
   @Patch('users/:id/role')
   setUserRole(
     @Param('id') id: string,
