@@ -236,7 +236,7 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
                       </div>
                       {!v.publishedAt && (
                         <Button size="sm" onClick={() => onPublish(v.id)}>
-                          <Send className="w-3.5 h-3.5 mr-1.5" />提交发布
+                          <Send className="w-3.5 h-3.5 mr-1.5" />发布
                         </Button>
                       )}
                     </div>

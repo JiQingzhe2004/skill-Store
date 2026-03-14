@@ -108,7 +108,7 @@ export class SkillsService {
         where: { id: skillId },
         data: {
           latestVersion: version.version,
-          status: SkillStatus.PENDING_REVIEW,
+          status: SkillStatus.PUBLISHED,
         },
       }),
     ])
