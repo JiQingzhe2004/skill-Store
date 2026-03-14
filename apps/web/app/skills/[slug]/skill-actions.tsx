@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Star, ThumbsUp, Download } from 'lucide-react'
 import { Button } from '../../../components/ui/button'
-import { apiRequest } from '../../../lib/api'
+import { apiRequest, getErrorMessage } from '../../../lib/api'
 
 type Props = {
   slug: string
@@ -20,15 +20,19 @@ export function SkillActions({ slug, initialStarCount, initialLikeCount, initial
   const [liked, setLiked] = useState(false)
   const [starLoading, setStarLoading] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
+  const [errMsg, setErrMsg] = useState('')
 
   const handleStar = async () => {
     if (!isLoggedIn) { window.location.href = '/?auth=login'; return }
     if (starLoading) return
-    setStarLoading(true)
+    setStarLoading(true); setErrMsg('')
     const res = await apiRequest<{ starred: boolean }>(`/skills/public/${slug}/star`, { method: 'POST' })
     if (res.success && res.data) {
       setStarred(res.data.starred)
       setStarCount(prev => res.data!.starred ? prev + 1 : prev - 1)
+    } else {
+      setErrMsg(getErrorMessage(res))
+      setTimeout(() => setErrMsg(''), 3000)
     }
     setStarLoading(false)
   }
@@ -36,17 +40,22 @@ export function SkillActions({ slug, initialStarCount, initialLikeCount, initial
   const handleLike = async () => {
     if (!isLoggedIn) { window.location.href = '/?auth=login'; return }
     if (likeLoading) return
-    setLikeLoading(true)
+    setLikeLoading(true); setErrMsg('')
     const res = await apiRequest<{ liked: boolean }>(`/skills/public/${slug}/like`, { method: 'POST' })
     if (res.success && res.data) {
       setLiked(res.data.liked)
       setLikeCount(prev => res.data!.liked ? prev + 1 : prev - 1)
+    } else {
+      setErrMsg(getErrorMessage(res))
+      setTimeout(() => setErrMsg(''), 3000)
     }
     setLikeLoading(false)
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="grid gap-2">
+      {errMsg && <p className="text-xs text-destructive text-right">{errMsg}</p>}
+      <div className="flex items-center gap-2">
       <Button
         variant={starred ? 'default' : 'outline'}
         size="sm"
@@ -71,6 +80,7 @@ export function SkillActions({ slug, initialStarCount, initialLikeCount, initial
         <Download className="w-4 h-4" />
         安装 · {initialDownloadCount}
       </Button>
+      </div>
     </div>
   )
 }
