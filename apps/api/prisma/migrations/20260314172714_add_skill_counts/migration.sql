@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `skills` ADD COLUMN `download_count` INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN `like_count` INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN `star_count` INTEGER NOT NULL DEFAULT 0;

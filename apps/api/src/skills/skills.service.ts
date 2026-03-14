@@ -181,6 +181,7 @@ export class SkillsService {
         select: {
           id: true, slug: true, name: true, description: true,
           tags: true, latestVersion: true, updatedAt: true,
+          downloadCount: true, starCount: true, likeCount: true,
           author: { select: { username: true, avatar: true } },
         },
       }),

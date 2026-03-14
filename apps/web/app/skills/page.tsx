@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { headers, cookies } from 'next/headers'
-import { Search, User, Tag } from 'lucide-react'
+import { Search, User, Download, Star, ThumbsUp } from 'lucide-react'
 import { SiteNav } from '../../components/site-nav'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
@@ -16,6 +16,9 @@ type PublicSkill = {
   tags: string
   latestVersion: string | null
   updatedAt: string
+  downloadCount: number
+  starCount: number
+  likeCount: number
   author: { username: string; avatar?: string | null }
 }
 
@@ -80,24 +83,27 @@ export default async function SkillsPage({ searchParams }: Props) {
                           {skill.description}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <div className="w-5 h-5 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                              {skill.author.avatar
-                                ? <img src={skill.author.avatar} alt={skill.author.username} className="w-full h-full object-cover" />
-                                : <User className="w-3 h-3 text-muted-foreground" />}
-                            </div>
-                            <span>{skill.author.username}</span>
+                      <CardContent className="pt-0 grid gap-3">
+                        {/* 作者 */}
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <div className="w-5 h-5 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                            {skill.author.avatar
+                              ? <img src={skill.author.avatar} alt={skill.author.username} className="w-full h-full object-cover" />
+                              : <User className="w-3 h-3 text-muted-foreground" />}
                           </div>
-                          {skill.tags && (
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                              <Tag className="w-3.5 h-3.5" />
-                              <span className="truncate max-w-[100px]">
-                                {skill.tags.split(',')[0].trim()}
-                              </span>
-                            </div>
-                          )}
+                          <span>{skill.author.username}</span>
+                        </div>
+                        {/* 统计数据 */}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Download className="w-3 h-3" />{skill.downloadCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Star className="w-3 h-3" />{skill.starCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <ThumbsUp className="w-3 h-3" />{skill.likeCount}
+                          </span>
                         </div>
                       </CardContent>
                     </Card>
