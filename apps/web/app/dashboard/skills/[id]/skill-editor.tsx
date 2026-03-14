@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Send, Trash2, CheckCircle2, Clock, FileText } from 'lucide-react'
+import { ArrowLeft, Save, Send, Trash2, CheckCircle2, Clock, FileText, Code2, History } from 'lucide-react'
 
 import { Button } from '../../../../components/ui/button'
 import { Input } from '../../../../components/ui/input'
@@ -27,24 +27,27 @@ type Skill = {
 
 type Version = {
   id: string; version: string; changelog: string | null
+  content?: string
   publishedAt: string | null; createdAt: string
 }
 
+/* ─── Schemas ─── */
+
 const infoSchema = z.object({
-  name: z.string().min(2).max(128),
-  description: z.string().min(10).max(512),
+  name: z.string().min(2, '名称至少 2 个字符').max(128),
+  description: z.string().min(10, '描述至少 10 个字符').max(512),
   tags: z.string().max(512).optional(),
   visibility: z.enum(['PUBLIC', 'UNLISTED', 'PRIVATE']),
 })
 
-const versionSchema = z.object({
-  version: z.string().regex(/^\d+\.\d+\.\d+$/, '版本号格式：1.0.0'),
+const contentSchema = z.object({
   content: z.string().min(10, '内容至少 10 个字符'),
-  changelog: z.string().max(1000).optional(),
 })
 
 type InfoValues = z.infer<typeof infoSchema>
-type VersionValues = z.infer<typeof versionSchema>
+type ContentValues = z.infer<typeof contentSchema>
+
+/* ─── Helpers ─── */
 
 const statusLabel: Record<string, string> = {
   DRAFT: '草稿', PENDING_REVIEW: '审核中', PUBLISHED: '已发布',
@@ -55,14 +58,47 @@ const statusVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
   ARCHIVED: 'outline', REJECTED: 'outline',
 }
 
-export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; versions: Version[] }) {
+/** 比较语义化版本：返回 1 if a > b, -1 if a < b, 0 if equal */
+function compareSemver(a: string, b: string): number {
+  const pa = a.split('.').map(Number)
+  const pb = b.split('.').map(Number)
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] > pb[i]) return 1
+    if (pa[i] < pb[i]) return -1
+  }
+  return 0
+}
+
+/** 根据当前最高版本号自动推荐下一个 patch 版本 */
+function suggestNextVersion(versions: Version[]): string {
+  if (versions.length === 0) return '1.0.0'
+  // 取所有版本号中最大的
+  const sorted = [...versions].sort((a, b) => compareSemver(b.version, a.version))
+  const latest = sorted[0].version
+  const parts = latest.split('.').map(Number)
+  parts[2] += 1
+  return parts.join('.')
+}
+
+/* ─── Component ─── */
+
+export function SkillEditor({ skill, versions: initVersions, latestContent }: {
+  skill: Skill
+  versions: Version[]
+  latestContent?: string
+}) {
   const router = useRouter()
   const [versions, setVersions] = useState(initVersions)
-  const [infoSuccess, setInfoSuccess] = useState('')
-  const [infoError, setInfoError] = useState('')
-  const [versionError, setVersionError] = useState('')
-  const [versionSuccess, setVersionSuccess] = useState('')
+  const [infoMsg, setInfoMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [contentMsg, setContentMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [publishMsg, setPublishMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
+  const flash = (setter: typeof setInfoMsg, type: 'ok' | 'err', text: string) => {
+    setter({ type, text })
+    if (type === 'ok') setTimeout(() => setter(null), 3000)
+  }
+
+  /* ── 基本信息 Form ── */
   const infoForm = useForm<InfoValues>({
     resolver: zodResolver(infoSchema),
     defaultValues: {
@@ -73,43 +109,55 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
     },
   })
 
-  const versionForm = useForm<VersionValues>({
-    resolver: zodResolver(versionSchema),
-    defaultValues: { version: '', content: '', changelog: '' },
+  /* ── 技能内容 Form ── */
+  const contentForm = useForm<ContentValues>({
+    resolver: zodResolver(contentSchema),
+    defaultValues: { content: latestContent ?? '' },
   })
 
   const onUpdateInfo = infoForm.handleSubmit(async (values) => {
-    setInfoError(''); setInfoSuccess('')
+    setInfoMsg(null)
     const res = await apiRequest(`/skills/${skill.id}`, { method: 'PATCH', body: JSON.stringify(values) })
-    if (!res.success) { setInfoError(getErrorMessage(res)); return }
-    setInfoSuccess('✓ 保存成功')
-    setTimeout(() => setInfoSuccess(''), 3000)
+    if (!res.success) { flash(setInfoMsg, 'err', getErrorMessage(res)); return }
+    flash(setInfoMsg, 'ok', '✓ 保存成功')
   })
 
-  const onCreateVersion = versionForm.handleSubmit(async (values) => {
-    setVersionError(''); setVersionSuccess('')
+  const onSaveContent = contentForm.handleSubmit(async (values) => {
+    setContentMsg(null)
+    // 计算下一个版本号
+    const nextVer = suggestNextVersion(versions)
     const res = await apiRequest<Version>(`/skills/${skill.id}/versions`, {
       method: 'POST',
-      body: JSON.stringify(values),
+      body: JSON.stringify({
+        version: nextVer,
+        content: values.content,
+        changelog: '',
+      }),
     })
-    if (!res.success) { setVersionError(getErrorMessage(res)); return }
+    if (!res.success) { flash(setContentMsg, 'err', getErrorMessage(res)); return }
     if (res.data) setVersions(prev => [res.data!, ...prev])
-    versionForm.reset()
-    setVersionSuccess('✓ 版本已保存')
-    setTimeout(() => setVersionSuccess(''), 3000)
+    flash(setContentMsg, 'ok', `✓ 已保存为 v${nextVer}`)
   })
 
   const onPublish = async (versionId: string) => {
+    setPublishMsg(null)
     const res = await apiRequest(`/skills/${skill.id}/versions/${versionId}/publish`, { method: 'POST' })
-    if (!res.success) return
+    if (!res.success) { flash(setPublishMsg, 'err', getErrorMessage(res)); return }
     setVersions(prev => prev.map(v => v.id === versionId ? { ...v, publishedAt: new Date().toISOString() } : v))
-    router.refresh()
+    flash(setPublishMsg, 'ok', '✓ 已发布')
   }
 
   const onDelete = async () => {
     if (!confirm(`确认删除技能「${skill.name}」？此操作不可撤销。`)) return
     const res = await apiRequest(`/skills/${skill.id}`, { method: 'DELETE' })
     if (res.success) router.push('/dashboard/skills')
+  }
+
+  const MsgBox = ({ msg }: { msg: { type: 'ok' | 'err'; text: string } | null }) => {
+    if (!msg) return null
+    return msg.type === 'ok'
+      ? <Alert className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400"><AlertDescription>{msg.text}</AlertDescription></Alert>
+      : <Alert variant="destructive"><AlertDescription>{msg.text}</AlertDescription></Alert>
   }
 
   return (
@@ -124,22 +172,30 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold">{skill.name}</h1>
               <Badge variant={statusVariant[skill.status]}>{statusLabel[skill.status]}</Badge>
+              {skill.latestVersion && (
+                <Badge variant="secondary" className="font-mono text-xs">v{skill.latestVersion}</Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground font-mono">{skill.slug}</p>
           </div>
         </div>
         <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={onDelete}>
-          <Trash2 className="w-3.5 h-3.5 mr-1.5" />删除技能
+          <Trash2 className="w-3.5 h-3.5 mr-1.5" />删除
         </Button>
       </div>
 
-      <Tabs defaultValue="info">
+      <Tabs defaultValue="content">
         <TabsList>
           <TabsTrigger value="info">基本信息</TabsTrigger>
-          <TabsTrigger value="versions">版本管理 {versions.length > 0 && `(${versions.length})`}</TabsTrigger>
+          <TabsTrigger value="content">
+            <Code2 className="w-3.5 h-3.5 mr-1.5" />技能内容
+          </TabsTrigger>
+          <TabsTrigger value="versions">
+            <History className="w-3.5 h-3.5 mr-1.5" />版本历史 {versions.length > 0 && `(${versions.length})`}
+          </TabsTrigger>
         </TabsList>
 
-        {/* 基本信息 Tab */}
+        {/* ── Tab 1：基本信息 ── */}
         <TabsContent value="info">
           <Card className="border-border/60 bg-background/95">
             <CardHeader>
@@ -168,15 +224,14 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
                     onValueChange={(v) => infoForm.setValue('visibility', v as InfoValues['visibility'])}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent sideOffset={4} side="top">
                       <SelectItem value="PUBLIC">公开</SelectItem>
                       <SelectItem value="UNLISTED">隐藏</SelectItem>
                       <SelectItem value="PRIVATE">私有</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                {infoError && <Alert variant="destructive"><AlertDescription>{infoError}</AlertDescription></Alert>}
-                {infoSuccess && <Alert className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400"><AlertDescription>{infoSuccess}</AlertDescription></Alert>}
+                <MsgBox msg={infoMsg} />
                 <Button type="submit" disabled={infoForm.formState.isSubmitting}>
                   {infoForm.formState.isSubmitting ? '保存中...' : '保存修改'}
                 </Button>
@@ -185,49 +240,64 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
           </Card>
         </TabsContent>
 
-        {/* 版本管理 Tab */}
-        <TabsContent value="versions" className="grid gap-4">
-          {/* 新建版本 */}
+        {/* ── Tab 2：技能内容 ── */}
+        <TabsContent value="content">
           <Card className="border-border/60 bg-background/95">
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><Plus className="w-4 h-4" />保存新版本</CardTitle>
-              <CardDescription>content 字段为 SKILL.md 格式的完整内容</CardDescription>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Code2 className="w-4 h-4" />编辑技能内容
+              </CardTitle>
+              <CardDescription>
+                编写 SKILL.md 格式的技能内容，保存后自动创建新版本（v{suggestNextVersion(versions)}）
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="grid gap-4" onSubmit={onCreateVersion}>
+              <form className="grid gap-4" onSubmit={onSaveContent}>
                 <div className="grid gap-2">
-                  <Label>版本号 <span className="text-muted-foreground text-xs">（语义化，如 1.0.0）</span></Label>
-                  <Input placeholder="1.0.0" {...versionForm.register('version')} aria-invalid={Boolean(versionForm.formState.errors.version)} />
-                  {versionForm.formState.errors.version && <p className="text-xs text-destructive">{versionForm.formState.errors.version.message}</p>}
-                </div>
-                <div className="grid gap-2">
-                  <Label>技能内容 <span className="text-muted-foreground text-xs">（SKILL.md 格式）</span></Label>
                   <Textarea
-                    rows={10}
-                    placeholder="---\nname: my-skill\ndescription: ...\n---\n\n# 技能内容"
-                    className="font-mono text-xs"
-                    {...versionForm.register('content')}
+                    rows={20}
+                    placeholder={"---\nname: my-skill\ndescription: 一句话描述\n---\n\n# 技能名称\n\n技能的详细说明..."}
+                    className="font-mono text-xs leading-relaxed"
+                    {...contentForm.register('content')}
                   />
-                  {versionForm.formState.errors.content && <p className="text-xs text-destructive">{versionForm.formState.errors.content.message}</p>}
+                  {contentForm.formState.errors.content && (
+                    <p className="text-xs text-destructive">{contentForm.formState.errors.content.message}</p>
+                  )}
                 </div>
-                <div className="grid gap-2">
-                  <Label>更新说明 <span className="text-muted-foreground text-xs">（可选）</span></Label>
-                  <Textarea rows={2} {...versionForm.register('changelog')} />
+                <MsgBox msg={contentMsg} />
+                <div className="flex gap-3">
+                  <Button type="submit" disabled={contentForm.formState.isSubmitting}>
+                    <Save className="w-4 h-4 mr-2" />
+                    {contentForm.formState.isSubmitting ? '保存中...' : `保存为 v${suggestNextVersion(versions)}`}
+                  </Button>
+                  {versions.length > 0 && !versions[0].publishedAt && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => onPublish(versions[0].id)}
+                    >
+                      <Send className="w-4 h-4 mr-2" />发布最新版本
+                    </Button>
+                  )}
                 </div>
-                {versionError && <Alert variant="destructive"><AlertDescription>{versionError}</AlertDescription></Alert>}
-                {versionSuccess && <Alert className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400"><AlertDescription>{versionSuccess}</AlertDescription></Alert>}
-                <Button type="submit" variant="outline" disabled={versionForm.formState.isSubmitting}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  {versionForm.formState.isSubmitting ? '保存中...' : '保存草稿版本'}
-                </Button>
               </form>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* 版本列表 */}
-          {versions.length > 0 && (
+        {/* ── Tab 3：版本历史 ── */}
+        <TabsContent value="versions">
+          {versions.length === 0 ? (
+            <Card className="border-border/60 bg-background/95">
+              <CardContent className="py-12 text-center text-sm text-muted-foreground">
+                <FileText className="w-8 h-8 mx-auto mb-3 text-muted-foreground/50" />
+                还没有版本，在「技能内容」页保存第一个版本
+              </CardContent>
+            </Card>
+          ) : (
             <div className="grid gap-3">
-              {versions.map((v) => (
+              <MsgBox msg={publishMsg} />
+              {versions.map((v, i) => (
                 <Card key={v.id} className="border-border/60 bg-background/95">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -237,12 +307,18 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
                           ? <Badge variant="default" className="text-xs"><CheckCircle2 className="w-3 h-3 mr-1" />已发布</Badge>
                           : <Badge variant="outline" className="text-xs"><Clock className="w-3 h-3 mr-1" />草稿</Badge>
                         }
+                        {i === 0 && <Badge variant="secondary" className="text-xs">最新</Badge>}
                       </div>
-                      {!v.publishedAt && (
-                        <Button size="sm" onClick={() => onPublish(v.id)}>
-                          <Send className="w-3.5 h-3.5 mr-1.5" />发布
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(v.createdAt).toLocaleString('zh-CN')}
+                        </span>
+                        {!v.publishedAt && (
+                          <Button size="sm" onClick={() => onPublish(v.id)}>
+                            <Send className="w-3.5 h-3.5 mr-1.5" />发布
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     {v.changelog && <CardDescription className="text-xs mt-1">{v.changelog}</CardDescription>}
                   </CardHeader>

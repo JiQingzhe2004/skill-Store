@@ -79,6 +79,23 @@ export class SkillsService {
     })
     if (existing) throw new AppException(HttpStatus.CONFLICT, 'VERSION_EXISTS', '该版本号已存在')
 
+    // 版本号必须递增
+    const latestVersion = await this.prisma.skillVersion.findFirst({
+      where: { skillId },
+      orderBy: { createdAt: 'desc' },
+      select: { version: true },
+    })
+    if (latestVersion) {
+      const cur = dto.version.split('.').map(Number)
+      const prev = latestVersion.version.split('.').map(Number)
+      const isHigher = cur[0] > prev[0]
+        || (cur[0] === prev[0] && cur[1] > prev[1])
+        || (cur[0] === prev[0] && cur[1] === prev[1] && cur[2] > prev[2])
+      if (!isHigher) {
+        throw new AppException(HttpStatus.BAD_REQUEST, 'VERSION_MUST_INCREMENT', `版本号必须大于当前最新版本 ${latestVersion.version}`)
+      }
+    }
+
     return this.prisma.skillVersion.create({
       data: {
         skillId,
@@ -124,7 +141,7 @@ export class SkillsService {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, version: true, changelog: true,
-        publishedAt: true, createdAt: true,
+        content: true, publishedAt: true, createdAt: true,
       },
     })
   }

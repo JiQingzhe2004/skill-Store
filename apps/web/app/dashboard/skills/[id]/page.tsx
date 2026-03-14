@@ -23,6 +23,7 @@ type Version = {
   id: string
   version: string
   changelog: string | null
+  content?: string
   publishedAt: string | null
   createdAt: string
 }
@@ -46,6 +47,10 @@ export default async function SkillDetailPage({ params }: Props) {
 
   if (!skillRes.success || !skillRes.data) notFound()
 
+  const versions = versionsRes.data ?? []
+  // 取最新版本的内容给编辑器
+  const latestContent = versions.length > 0 ? versions[0].content ?? '' : ''
+
   return (
     <>
       <SiteNav user={user} />
@@ -53,7 +58,8 @@ export default async function SkillDetailPage({ params }: Props) {
         <div className="mx-auto max-w-4xl">
           <SkillEditor
             skill={skillRes.data}
-            versions={versionsRes.data ?? []}
+            versions={versions}
+            latestContent={latestContent}
           />
         </div>
       </main>
