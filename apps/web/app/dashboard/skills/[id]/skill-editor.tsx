@@ -109,10 +109,20 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
     },
   })
 
+  const defaultContent = latestContent || `---
+name: ${skill.slug}
+description: ${skill.description}
+---
+
+# ${skill.name}
+
+在这里编写技能的详细内容...
+`
+
   /* ── 技能内容 Form ── */
   const contentForm = useForm<ContentValues>({
     resolver: zodResolver(contentSchema),
-    defaultValues: { content: latestContent ?? '' },
+    defaultValues: { content: defaultContent },
   })
 
   const onUpdateInfo = infoForm.handleSubmit(async (values) => {
@@ -248,7 +258,10 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
                 <Code2 className="w-4 h-4" />编辑技能内容
               </CardTitle>
               <CardDescription>
-                编写 SKILL.md 格式的技能内容，保存后自动创建新版本（v{suggestNextVersion(versions)}）
+                {latestContent
+                  ? `当前显示 v${versions[0]?.version} 的内容，保存后将创建 v${suggestNextVersion(versions)}`
+                  : `首次编辑，保存后将创建 v${suggestNextVersion(versions)}`
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
