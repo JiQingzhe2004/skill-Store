@@ -83,27 +83,29 @@ export default async function SkillsPage({ searchParams }: Props) {
                           {skill.description}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-0 grid gap-3">
-                        {/* 作者 */}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <div className="w-5 h-5 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                            {skill.author.avatar
-                              ? <img src={skill.author.avatar} alt={skill.author.username} className="w-full h-full object-cover" />
-                              : <User className="w-3 h-3 text-muted-foreground" />}
+                      <CardContent className="pt-0">
+                        <div className="flex items-center justify-between">
+                          {/* 作者 */}
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="w-5 h-5 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                              {skill.author.avatar
+                                ? <img src={skill.author.avatar} alt={skill.author.username} className="w-full h-full object-cover" />
+                                : <User className="w-3 h-3 text-muted-foreground" />}
+                            </div>
+                            <span>{skill.author.username}</span>
                           </div>
-                          <span>{skill.author.username}</span>
-                        </div>
-                        {/* 统计数据 */}
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Download className="w-3 h-3" />{skill.downloadCount}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Star className="w-3 h-3" />{skill.starCount}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <ThumbsUp className="w-3 h-3" />{skill.likeCount}
-                          </span>
+                          {/* 统计数据 */}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Download className="w-3 h-3" />{skill.downloadCount}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Star className="w-3 h-3" />{skill.starCount}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <ThumbsUp className="w-3 h-3" />{skill.likeCount}
+                            </span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
