@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Store, LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown } from 'lucide-react'
+import { Store, LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus } from 'lucide-react'
 import { Button } from './ui/button'
 import {
   DropdownMenu,
@@ -87,6 +87,18 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
                   <Link href="/dashboard">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     控制台
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/dashboard/skills">
+                    <Boxes className="mr-2 h-4 w-4" />
+                    我的技能
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/dashboard/skills/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    创建技能
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">

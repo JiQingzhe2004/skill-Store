@@ -116,7 +116,7 @@ export function NewSkillForm() {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent sideOffset={4} side="top">
                 <SelectItem value="PUBLIC">公开 — 所有人可见</SelectItem>
                 <SelectItem value="UNLISTED">隐藏 — 有链接可访问，需 API Key</SelectItem>
                 <SelectItem value="PRIVATE">私有 — 仅自己可见</SelectItem>

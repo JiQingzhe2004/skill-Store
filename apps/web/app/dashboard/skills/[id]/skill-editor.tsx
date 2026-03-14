@@ -61,6 +61,7 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
   const [infoSuccess, setInfoSuccess] = useState('')
   const [infoError, setInfoError] = useState('')
   const [versionError, setVersionError] = useState('')
+  const [versionSuccess, setVersionSuccess] = useState('')
 
   const infoForm = useForm<InfoValues>({
     resolver: zodResolver(infoSchema),
@@ -81,12 +82,12 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
     setInfoError(''); setInfoSuccess('')
     const res = await apiRequest(`/skills/${skill.id}`, { method: 'PATCH', body: JSON.stringify(values) })
     if (!res.success) { setInfoError(getErrorMessage(res)); return }
-    setInfoSuccess('保存成功')
-    router.refresh()
+    setInfoSuccess('✓ 保存成功')
+    setTimeout(() => setInfoSuccess(''), 3000)
   })
 
   const onCreateVersion = versionForm.handleSubmit(async (values) => {
-    setVersionError('')
+    setVersionError(''); setVersionSuccess('')
     const res = await apiRequest<Version>(`/skills/${skill.id}/versions`, {
       method: 'POST',
       body: JSON.stringify(values),
@@ -94,6 +95,8 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
     if (!res.success) { setVersionError(getErrorMessage(res)); return }
     if (res.data) setVersions(prev => [res.data!, ...prev])
     versionForm.reset()
+    setVersionSuccess('✓ 版本已保存')
+    setTimeout(() => setVersionSuccess(''), 3000)
   })
 
   const onPublish = async (versionId: string) => {
@@ -212,6 +215,7 @@ export function SkillEditor({ skill, versions: initVersions }: { skill: Skill; v
                   <Textarea rows={2} {...versionForm.register('changelog')} />
                 </div>
                 {versionError && <Alert variant="destructive"><AlertDescription>{versionError}</AlertDescription></Alert>}
+                {versionSuccess && <Alert className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400"><AlertDescription>{versionSuccess}</AlertDescription></Alert>}
                 <Button type="submit" variant="outline" disabled={versionForm.formState.isSubmitting}>
                   <FileText className="w-4 h-4 mr-2" />
                   {versionForm.formState.isSubmitting ? '保存中...' : '保存草稿版本'}
