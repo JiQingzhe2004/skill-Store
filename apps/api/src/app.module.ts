@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config'
 import configuration from './config/configuration'
 import { validateEnv } from './config/validate-env'
 import { AuthModule } from './auth/auth.module'
+import { SkillsModule } from './skills/skills.module'
 import { MailerModule } from './mailer/mailer.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { RateLimitModule } from './rate-limit/rate-limit.module'
@@ -21,6 +22,7 @@ import { RateLimitModule } from './rate-limit/rate-limit.module'
     MailerModule,
     RateLimitModule,
     AuthModule,
+    SkillsModule,
   ],
 })
 export class AppModule {}

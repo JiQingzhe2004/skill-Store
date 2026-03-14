@@ -1,8 +1,10 @@
-import { Mail, ShieldCheck, UserRound, UserSquare2 } from 'lucide-react'
+import { Mail, ShieldCheck, UserRound, UserSquare2, Boxes, Plus, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { Badge } from '../../components/ui/badge'
+import { Button } from '../../components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card'
 import { SiteNav } from '../../components/site-nav'
 import { fetchCurrentUser } from '../../lib/server-auth'
@@ -94,6 +96,31 @@ export default async function DashboardPage() {
                 </Card>
               </CardContent>
               <CardFooter className="text-sm text-muted-foreground">Skill Store v1 当前已完成认证闭环。</CardFooter>
+            </Card>
+
+            {/* 技能管理入口 */}
+            <Card className="border-border/60 bg-background/95 shadow-md md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Boxes className="w-5 h-5" />
+                  我的技能
+                </CardTitle>
+                <CardDescription>管理你发布的 AI 技能，创建新版本并提交审核</CardDescription>
+              </CardHeader>
+              <CardContent className="flex gap-3">
+                <Button asChild>
+                  <Link href="/dashboard/skills">
+                    <ArrowRight className="w-4 h-4 mr-1.5" />
+                    查看我的技能
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/dashboard/skills/new">
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    新建技能
+                  </Link>
+                </Button>
+              </CardContent>
             </Card>
           </div>
         </div>

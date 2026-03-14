@@ -23,7 +23,7 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button variant="ghost" size="icon" onClick={toggle} aria-label="切换主题">
+    <Button variant="ghost" size="sm" onClick={toggle} aria-label="切换主题" className="w-8 h-8 px-0">
       {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
     </Button>
   )
