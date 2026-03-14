@@ -129,6 +129,29 @@ export class SkillsService {
     })
   }
 
+  /* ─── 公开技能详情（by slug） ─── */
+  async findPublicBySlug(slug: string) {
+    const skill = await this.prisma.skill.findUnique({
+      where: { slug },
+      select: {
+        id: true, slug: true, name: true, description: true,
+        tags: true, latestVersion: true, visibility: true, status: true,
+        createdAt: true, updatedAt: true,
+        author: { select: { username: true } },
+        versions: {
+          where: { publishedAt: { not: null } },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, version: true, changelog: true, publishedAt: true, createdAt: true },
+        },
+      },
+    })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+    if (skill.status !== SkillStatus.PUBLISHED || skill.visibility === SkillVisibility.PRIVATE) {
+      throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+    }
+    return skill
+  }
+
   /* ─── 公开技能列表 ─── */
   async findPublic(page = 1, pageSize = 20) {
     const skip = (page - 1) * pageSize

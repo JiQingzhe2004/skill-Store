@@ -24,6 +24,11 @@ export class SkillsController {
     )
   }
 
+  @Get('public/:slug')
+  findPublicBySlug(@Param('slug') slug: string) {
+    return this.skillsService.findPublicBySlug(slug)
+  }
+
   /* ─── 需要登录 ─── */
 
   @UseGuards(AccessTokenGuard)
