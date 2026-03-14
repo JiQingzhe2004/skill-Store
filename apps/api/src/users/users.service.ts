@@ -25,6 +25,25 @@ export class UsersService {
     return user
   }
 
+  async getMyStars(userId: string) {
+    const stars = await this.prisma.skillStar.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        createdAt: true,
+        skill: {
+          select: {
+            id: true, slug: true, name: true, description: true,
+            latestVersion: true, status: true,
+            downloadCount: true, starCount: true, likeCount: true,
+            author: { select: { username: true, avatar: true } },
+          },
+        },
+      },
+    })
+    return stars.map(s => ({ ...s.skill, starredAt: s.createdAt }))
+  }
+
   async updateMe(userId: string, dto: UpdateProfileDto) {
     // 校验 base64 图片大小（5MB 限制）
     if (dto.avatar) {

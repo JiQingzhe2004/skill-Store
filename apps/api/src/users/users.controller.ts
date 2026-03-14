@@ -20,4 +20,10 @@ export class UsersController {
   updateMe(@CurrentUser() user: JwtUser, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateMe(user.sub, dto)
   }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('me/stars')
+  getMyStars(@CurrentUser() user: JwtUser) {
+    return this.usersService.getMyStars(user.sub)
+  }
 }

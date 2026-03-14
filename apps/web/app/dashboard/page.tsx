@@ -220,7 +220,7 @@ export default async function DashboardPage() {
           </Card>
 
           {/* 快捷入口 */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Link href="/dashboard/skills/new" className="flex items-center gap-3 rounded-lg border border-border/60 px-4 py-3.5 hover:bg-muted/50 transition-colors">
               <div className="p-2 rounded-lg bg-primary/10"><Plus className="w-4 h-4 text-primary" /></div>
               <div>
@@ -233,6 +233,13 @@ export default async function DashboardPage() {
               <div>
                 <p className="text-sm font-medium">技能市场</p>
                 <p className="text-xs text-muted-foreground">浏览公开技能</p>
+              </div>
+            </Link>
+            <Link href="/dashboard/stars" className="flex items-center gap-3 rounded-lg border border-border/60 px-4 py-3.5 hover:bg-muted/50 transition-colors">
+              <div className="p-2 rounded-lg bg-yellow-500/10"><Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400" /></div>
+              <div>
+                <p className="text-sm font-medium">我的星标</p>
+                <p className="text-xs text-muted-foreground">收藏的技能</p>
               </div>
             </Link>
             <Link href="/dashboard/settings" className="flex items-center gap-3 rounded-lg border border-border/60 px-4 py-3.5 hover:bg-muted/50 transition-colors">
