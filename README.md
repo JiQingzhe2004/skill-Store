@@ -93,16 +93,64 @@ curl -X POST http://localhost:3001/api/admin/setup \
 
 设置完成后建议将 `ADMIN_SETUP_SECRET` 改为其他随机字符串。
 
+## Docker 容器化
+
+所有服务（前端、后端、数据库、邮件）均已容器化，支持开发热重载和生产构建两种模式。
+
+### 开发模式（热重载）
+
+```bash
+pnpm docker:dev
+```
+
+启动后：
+- 前端：http://localhost:3000（Next.js 热重载）
+- 后端：http://localhost:3001（NestJS watch 模式）
+- Mailpit UI：http://localhost:8025
+- MySQL：localhost:3306
+
+源码目录（`apps/api/src`、`apps/web/src`、`packages/shared`）已挂载为 volume，修改代码后自动重载，无需重建镜像。
+
+### 生产模式
+
+```bash
+# 复制并编辑生产环境变量
+cp apps/api/.env.production apps/api/.env.production.local
+# 编辑其中的 JWT secret、SMTP 等配置
+
+pnpm docker:prod
+```
+
+生产模式使用多阶段构建：
+- api：NestJS `nest build` → 只保留 `dist/` 和生产依赖
+- web：Next.js standalone 模式 → 只保留 `.next/standalone/`
+
+### 停止容器
+
+```bash
+pnpm docker:down        # 停止生产模式
+pnpm docker:down:dev    # 停止开发模式
+```
+
+### 技术栈补充
+
+| 层级 | 技术 |
+|------|------|
+| 容器化 | Docker + Docker Compose |
+| 邮件（开发）| Mailpit（替代 Mailhog）|
+
 ## 常用命令
 
 ```bash
-pnpm dev                    # 同时启动前后端
+pnpm dev                    # 同时启动前后端（本地）
 pnpm dev:web                # 只启动前端
 pnpm dev:api                # 只启动后端
-pnpm db:up                  # 启动 MySQL + Mailpit
+pnpm db:up                  # 启动本地 MySQL + Mailpit（非 Docker 全栈模式）
 pnpm db:down                # 停止本地服务
 pnpm prisma:generate        # 生成 Prisma Client
 pnpm prisma:migrate:dev     # 执行开发迁移
+pnpm docker:dev             # Docker 开发模式（全栈热重载）
+pnpm docker:prod            # Docker 生产模式
 ```
 
 ## 主要功能
