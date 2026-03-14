@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -32,6 +33,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export function SettingsForm({ profile }: { profile: UserProfile }) {
+  const router = useRouter()
   const [avatar, setAvatar] = useState<string | null>(profile?.avatar ?? null)
   const [avatarError, setAvatarError] = useState('')
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
@@ -85,6 +87,8 @@ export function SettingsForm({ profile }: { profile: UserProfile }) {
     }
     setMsg({ type: 'ok', text: '✓ 保存成功' })
     setTimeout(() => setMsg(null), 3000)
+    // 刷新 server 组件（nav 头像无感更新）
+    router.refresh()
   })
 
   return (
@@ -95,49 +99,38 @@ export function SettingsForm({ profile }: { profile: UserProfile }) {
           <CardTitle className="text-base">头像</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col items-center gap-3">
             <div
-              className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-border cursor-pointer group"
+              className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-border cursor-pointer group"
               onClick={() => fileInputRef.current?.click()}
             >
               {avatar ? (
                 <img src={avatar} alt="头像" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-muted">
-                  <User className="w-8 h-8 text-muted-foreground" />
+                  <User className="w-10 h-10 text-muted-foreground" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
                 <Camera className="w-5 h-5 text-white" />
               </div>
             </div>
-            <div className="grid gap-2">
-              <Button
+            <p className="text-xs text-muted-foreground text-center">
+              点击头像更换 · 支持 JPG、PNG、GIF · 最大 5MB
+            </p>
+            {avatar && (
+              <button
                 type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
+                className="text-xs text-destructive hover:underline"
+                onClick={() => setAvatar(null)}
               >
-                <Camera className="w-3.5 h-3.5 mr-1.5" />
-                更换头像
-              </Button>
-              {avatar && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setAvatar(null)}
-                >
-                  移除头像
-                </Button>
-              )}
-              <p className="text-xs text-muted-foreground">支持 JPG、PNG、GIF，最大 5MB</p>
-            </div>
+                移除头像
+              </button>
+            )}
+            {avatarError && (
+              <p className="text-xs text-destructive">{avatarError}</p>
+            )}
           </div>
-          {avatarError && (
-            <p className="text-xs text-destructive mt-2">{avatarError}</p>
-          )}
           <input
             ref={fileInputRef}
             type="file"
