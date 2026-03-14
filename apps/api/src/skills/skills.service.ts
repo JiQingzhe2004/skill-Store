@@ -137,7 +137,6 @@ export class SkillsService {
   async toggleStar(slug: string, userId: string) {
     const skill = await this.prisma.skill.findUnique({ where: { slug }, select: { id: true, authorId: true } })
     if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
-    if (skill.authorId === userId) throw new AppException(HttpStatus.BAD_REQUEST, 'CANNOT_SELF_STAR', '不能给自己的技能点星标')
     const existing = await this.prisma.skillStar.findUnique({
       where: { userId_skillId: { userId, skillId: skill.id } },
     })
@@ -156,7 +155,6 @@ export class SkillsService {
   async toggleLike(slug: string, userId: string) {
     const skill = await this.prisma.skill.findUnique({ where: { slug }, select: { id: true, authorId: true } })
     if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
-    if (skill.authorId === userId) throw new AppException(HttpStatus.BAD_REQUEST, 'CANNOT_SELF_LIKE', '不能给自己的技能点赞')
     const existing = await this.prisma.skillLike.findUnique({
       where: { userId_skillId: { userId, skillId: skill.id } },
     })
@@ -168,6 +166,28 @@ export class SkillsService {
       await this.prisma.skillLike.create({ data: { userId, skillId: skill.id } })
       await this.prisma.skill.update({ where: { id: skill.id }, data: { likeCount: { increment: 1 } } })
       return { liked: true }
+    }
+  }
+
+  /* ─── 当前用户对技能的互动状态 ─── */
+  async getUserInteraction(slug: string, userId: string) {
+    const skill = await this.prisma.skill.findUnique({ where: { slug }, select: { id: true } })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+
+    const [star, like] = await this.prisma.$transaction([
+      this.prisma.skillStar.findUnique({
+        where: { userId_skillId: { userId, skillId: skill.id } },
+        select: { userId: true },
+      }),
+      this.prisma.skillLike.findUnique({
+        where: { userId_skillId: { userId, skillId: skill.id } },
+        select: { userId: true },
+      }),
+    ])
+
+    return {
+      starred: !!star,
+      liked: !!like,
     }
   }
 

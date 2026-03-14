@@ -45,9 +45,15 @@ export default async function SkillDetailPage({ params }: Props) {
 
   const user = await fetchCurrentUser({ host, cookieHeader })
   const res = await serverApiRequest<SkillDetail>(`/skills/public/${slug}`, { host, cookieHeader })
+  const interactionRes = user
+    ? await serverApiRequest<{ starred: boolean; liked: boolean }>(`/skills/public/${slug}/me`, { host, cookieHeader })
+    : null
 
   if (!res.success || !res.data) notFound()
   const skill = res.data
+
+  const initialStarred = interactionRes?.success && interactionRes.data ? interactionRes.data.starred : false
+  const initialLiked = interactionRes?.success && interactionRes.data ? interactionRes.data.liked : false
 
   const tags = skill.tags ? skill.tags.split(',').map(t => t.trim()).filter(Boolean) : []
 
@@ -98,6 +104,8 @@ export default async function SkillDetailPage({ params }: Props) {
                   slug={skill.slug}
                   initialStarCount={skill.starCount}
                   initialLikeCount={skill.likeCount}
+                  initialStarred={initialStarred}
+                  initialLiked={initialLiked}
                   initialDownloadCount={skill.downloadCount}
                   isLoggedIn={!!user}
                 />

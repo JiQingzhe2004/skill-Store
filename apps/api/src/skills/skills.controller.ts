@@ -96,6 +96,12 @@ export class SkillsController {
   }
 
   @UseGuards(AccessTokenGuard)
+  @Get('public/:slug/me')
+  getUserInteraction(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.getUserInteraction(slug, user.sub)
+  }
+
+  @UseGuards(AccessTokenGuard)
   @Post(':id/versions/:versionId/publish')
   publishVersion(
     @CurrentUser() user: JwtUser,

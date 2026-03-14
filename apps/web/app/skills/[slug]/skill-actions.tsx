@@ -10,14 +10,24 @@ type Props = {
   initialStarCount: number
   initialLikeCount: number
   initialDownloadCount: number
+  initialStarred: boolean
+  initialLiked: boolean
   isLoggedIn: boolean
 }
 
-export function SkillActions({ slug, initialStarCount, initialLikeCount, initialDownloadCount, isLoggedIn }: Props) {
+export function SkillActions({
+  slug,
+  initialStarCount,
+  initialLikeCount,
+  initialDownloadCount,
+  initialStarred,
+  initialLiked,
+  isLoggedIn,
+}: Props) {
   const [starCount, setStarCount] = useState(initialStarCount)
   const [likeCount, setLikeCount] = useState(initialLikeCount)
-  const [starred, setStarred] = useState(false)
-  const [liked, setLiked] = useState(false)
+  const [starred, setStarred] = useState(initialStarred)
+  const [liked, setLiked] = useState(initialLiked)
   const [starLoading, setStarLoading] = useState(false)
   const [likeLoading, setLikeLoading] = useState(false)
   const [errMsg, setErrMsg] = useState('')
@@ -55,31 +65,37 @@ export function SkillActions({ slug, initialStarCount, initialLikeCount, initial
   return (
     <div className="grid gap-2">
       {errMsg && <p className="text-xs text-destructive text-right">{errMsg}</p>}
-      <div className="flex items-center gap-2">
-      <Button
-        variant={starred ? 'default' : 'outline'}
-        size="sm"
-        onClick={handleStar}
-        disabled={starLoading}
-        className="gap-1.5"
-      >
-        <Star className={`w-3.5 h-3.5 ${starred ? 'fill-current' : ''}`} />
-        <span>{starCount}</span>
-      </Button>
-      <Button
-        variant={liked ? 'default' : 'outline'}
-        size="sm"
-        onClick={handleLike}
-        disabled={likeLoading}
-        className="gap-1.5"
-      >
-        <ThumbsUp className={`w-3.5 h-3.5 ${liked ? 'fill-current' : ''}`} />
-        <span>{likeCount}</span>
-      </Button>
-      <Button size="lg" className="ml-2 gap-2">
-        <Download className="w-4 h-4" />
-        安装 · {initialDownloadCount}
-      </Button>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-0.5">
+            <Button
+              variant={starred ? 'default' : 'outline'}
+              size="sm"
+              onClick={handleStar}
+              disabled={starLoading}
+              className="w-9 h-9"
+            >
+              <Star className={`w-4 h-4 ${starred ? 'fill-current' : ''}`} />
+            </Button>
+            <span className="text-[11px] text-muted-foreground">{starCount}</span>
+          </div>
+          <div className="flex flex-col items-center gap-0.5">
+            <Button
+              variant={liked ? 'default' : 'outline'}
+              size="sm"
+              onClick={handleLike}
+              disabled={likeLoading}
+              className="w-9 h-9"
+            >
+              <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+            </Button>
+            <span className="text-[11px] text-muted-foreground">{likeCount}</span>
+          </div>
+        </div>
+        <Button size="lg" className="ml-2 gap-2">
+          <Download className="w-4 h-4" />
+          安装 · {initialDownloadCount}
+        </Button>
       </div>
     </div>
   )
