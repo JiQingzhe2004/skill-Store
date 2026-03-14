@@ -1,17 +1,11 @@
-import { ResetPasswordForm } from './reset-password-form'
+import { redirect } from 'next/navigation'
 
-type ResetPasswordPageProps = {
-  searchParams?:
-    | {
-        email?: string
-      }
-    | Promise<{
-        email?: string
-      }>
+type Props = {
+  searchParams: Promise<{ email?: string }>
 }
 
-export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
-  const resolvedSearchParams = await Promise.resolve(searchParams)
-
-  return <ResetPasswordForm initialEmail={resolvedSearchParams?.email} />
+export default async function ResetPasswordPage({ searchParams }: Props) {
+  const params = await searchParams
+  const email = params?.email ? `&email=${encodeURIComponent(params.email)}` : ''
+  redirect(`/?auth=reset-password${email}`)
 }

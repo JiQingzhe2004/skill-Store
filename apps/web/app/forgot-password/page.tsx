@@ -1,5 +1,5 @@
-import { ForgotPasswordForm } from './forgot-password-form'
+import { redirect } from 'next/navigation'
 
 export default function ForgotPasswordPage() {
-  return <ForgotPasswordForm />
+  redirect('/?auth=forgot-password')
 }

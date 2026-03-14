@@ -1,133 +1,111 @@
 import Link from 'next/link'
 import { headers, cookies } from 'next/headers'
-import { Boxes, Download, Share2, Sparkles, LogIn, UserPlus, LayoutDashboard, Store } from 'lucide-react'
+import { Boxes, Download, Share2, Sparkles, LayoutDashboard, Store, ArrowRight } from 'lucide-react'
 import { Button } from '../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { ThemeToggle } from '../components/theme-toggle'
+import { SiteNav } from '../components/site-nav'
 import { fetchCurrentUser } from '../lib/server-auth'
 import { messages } from '../messages'
+import type { AuthView } from '../components/auth-dialog'
 
-export default async function HomePage() {
+const validAuthViews: AuthView[] = ['login', 'register', 'forgot-password', 'reset-password', 'verify-email']
+
+type HomePageProps = {
+  searchParams: Promise<{ auth?: string; email?: string }>
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
   const headersList = await headers()
   const cookieStore = await cookies()
   const host = headersList.get('host') ?? 'localhost:3000'
   const cookieHeader = cookieStore.toString()
+  const params = await searchParams
 
   const user = await fetchCurrentUser({ host, cookieHeader })
   const m = messages.home
 
+  const authView = validAuthViews.includes(params.auth as AuthView) ? (params.auth as AuthView) : null
+  const authEmail = params.email ?? ''
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b px-6 py-4 flex items-center justify-between bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-2 font-bold text-lg">
-          <Store className="w-5 h-5" />
-          Skill Store
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          {user ? (
-            <Button asChild>
-              <Link href="/dashboard">
-                <LayoutDashboard className="w-4 h-4 mr-2" />
-                {m.ctaDashboard}
-              </Link>
-            </Button>
-          ) : (
-            <>
-              <Button variant="ghost" asChild className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-950">
-                <Link href="/login">
-                  <LogIn className="w-4 h-4 mr-2" />
-                  登录
-                </Link>
-              </Button>
-              <Button asChild>
-                <Link href="/register">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  注册
-                </Link>
-              </Button>
-            </>
-          )}
-        </div>
-      </header>
+      <SiteNav user={user} initialAuthView={user ? null : authView} initialAuthEmail={authEmail} />
 
-      {/* Hero */}
       <main className="flex-1 pt-16">
-        <section className="py-24 px-6 text-center max-w-3xl mx-auto">
-          <div className="flex justify-center mb-6">
-            <Sparkles className="w-12 h-12 text-primary" />
+        {/* Hero */}
+        <section className="relative py-32 px-6 text-center overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 flex items-start justify-center">
+            <div className="w-[600px] h-[400px] rounded-full bg-primary/5 blur-3xl -translate-y-1/2" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-6">{m.title}</h1>
-          <p className="text-muted-foreground text-lg mb-10">{m.description}</p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" asChild>
-              <Link href="/skills">
-                <Store className="w-4 h-4 mr-2" />
-                {m.ctaBrowse}
-              </Link>
-            </Button>
-            {user ? (
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/dashboard">
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  {m.ctaDashboard}
+
+          <div className="relative max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/60 bg-muted/50 text-xs text-muted-foreground mb-8 backdrop-blur-sm">
+              <Sparkles className="w-3 h-3" />
+              AI 技能市场，现已上线
+            </div>
+
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
+              {m.title}
+            </h1>
+            <p className="text-muted-foreground text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+              {m.description}
+            </p>
+
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Button size="lg" asChild className="group transition-all duration-200 hover:shadow-md">
+                <Link href="/skills">
+                  <Store className="w-4 h-4 mr-2" />
+                  {m.ctaBrowse}
+                  <ArrowRight className="w-3.5 h-3.5 ml-2 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </Button>
-            ) : (
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/register">
-                  <Share2 className="w-4 h-4 mr-2" />
-                  {m.ctaPublish}
-                </Link>
-              </Button>
-            )}
+              {user ? (
+                <Button size="lg" variant="outline" asChild className="transition-all duration-200 hover:shadow-sm">
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    {m.ctaDashboard}
+                  </Link>
+                </Button>
+              ) : (
+                <Button size="lg" variant="outline" asChild className="transition-all duration-200 hover:shadow-sm">
+                  <Link href="/?auth=register">
+                    <Share2 className="w-4 h-4 mr-2" />
+                    {m.ctaPublish}
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
         </section>
 
         {/* Features */}
-        <section className="py-16 px-6 max-w-5xl mx-auto">
-          <h2 className="text-2xl font-semibold text-center mb-12">{m.featureTitle}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Boxes className="w-5 h-5 text-primary" />
-                  <CardTitle className="text-base">{m.feature1Title}</CardTitle>
+        <section className="py-20 px-6 max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">{m.featureTitle}</h2>
+            <p className="text-muted-foreground text-sm">简单、开放、高效</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              { icon: Boxes, title: m.feature1Title, desc: m.feature1Desc },
+              { icon: Download, title: m.feature2Title, desc: m.feature2Desc },
+              { icon: Share2, title: m.feature3Title, desc: m.feature3Desc },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div
+                key={title}
+                className="group relative rounded-xl border border-border/60 bg-card p-6 transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-border"
+              >
+                <div className="mb-4 inline-flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                  <Icon className="w-5 h-5" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{m.feature1Desc}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Download className="w-5 h-5 text-primary" />
-                  <CardTitle className="text-base">{m.feature2Title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{m.feature2Desc}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <Share2 className="w-5 h-5 text-primary" />
-                  <CardTitle className="text-base">{m.feature3Title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{m.feature3Desc}</p>
-              </CardContent>
-            </Card>
+                <h3 className="font-semibold text-sm mb-2">{title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
+              </div>
+            ))}
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t px-6 py-6 text-center text-sm text-muted-foreground">
+      <footer className="border-t border-border/50 px-6 py-5 text-center text-xs text-muted-foreground">
         © {new Date().getFullYear()} Skill Store
       </footer>
     </div>

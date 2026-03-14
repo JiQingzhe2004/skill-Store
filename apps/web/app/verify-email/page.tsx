@@ -1,17 +1,11 @@
-import { VerifyEmailForm } from './verify-email-form'
+import { redirect } from 'next/navigation'
 
-type VerifyEmailPageProps = {
-  searchParams?:
-    | {
-        email?: string
-      }
-    | Promise<{
-        email?: string
-      }>
+type Props = {
+  searchParams: Promise<{ email?: string }>
 }
 
-export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageProps) {
-  const resolvedSearchParams = await Promise.resolve(searchParams)
-
-  return <VerifyEmailForm initialEmail={resolvedSearchParams?.email} />
+export default async function VerifyEmailPage({ searchParams }: Props) {
+  const params = await searchParams
+  const email = params?.email ? `&email=${encodeURIComponent(params.email)}` : ''
+  redirect(`/?auth=verify-email${email}`)
 }

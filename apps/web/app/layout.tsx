@@ -2,8 +2,11 @@ import './globals.css'
 
 import type { Metadata } from 'next'
 import { ReactNode } from 'react'
+import { Inter } from 'next/font/google'
 
 import { messages } from '../messages'
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
   title: messages.common.siteTitle,
@@ -20,7 +23,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
+      <body className={`${inter.variable} font-sans min-h-screen bg-background text-foreground antialiased`}>{children}</body>
     </html>
   )
 }
