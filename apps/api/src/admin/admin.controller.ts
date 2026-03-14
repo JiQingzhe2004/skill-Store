@@ -1,23 +1,32 @@
-import { Controller, Get, Patch, Delete, Param, Query, UseGuards, Body } from '@nestjs/common'
+import { Controller, Get, Patch, Delete, Param, Query, UseGuards, Body, Post } from '@nestjs/common'
 import { UserRole } from '@prisma/client'
 import { AccessTokenGuard } from '../auth/guards/access-token.guard'
 import { RolesGuard } from '../common/guards/roles.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { AdminService } from './admin.service'
+import { CurrentUser } from '../common/decorators/current-user.decorator'
+import { JwtUser } from '../common/types/jwt-user'
 
 @Controller('admin')
-@UseGuards(AccessTokenGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Get('stats')
-  getStats() {
-    return this.adminService.getStats()
+  /* ─── 初始化管理员（只需登录 + setup secret）─── */
+  @UseGuards(AccessTokenGuard)
+  @Post('setup')
+  setup(@CurrentUser() user: JwtUser, @Body('secret') secret: string) {
+    return this.adminService.setupAdmin(user.sub, secret)
   }
 
-  /* ─── 用户管理 ─── */
+  /* ─── 以下全部需要 ADMIN 角色 ─── */
 
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('stats')
+  getStats() { return this.adminService.getStats() }
+
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Get('users')
   listUsers(
     @Query('page') page?: string,
@@ -31,6 +40,8 @@ export class AdminController {
     )
   }
 
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch('users/:id/ban')
   banUser(
     @Param('id') id: string,
@@ -40,11 +51,15 @@ export class AdminController {
     return this.adminService.banUser(id, durationHours, reason)
   }
 
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch('users/:id/unban')
   unbanUser(@Param('id') id: string) {
     return this.adminService.unbanUser(id)
   }
 
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch('users/:id/role')
   setUserRole(
     @Param('id') id: string,
@@ -53,8 +68,8 @@ export class AdminController {
     return this.adminService.setUserRole(id, role)
   }
 
-  /* ─── 技能管理 ─── */
-
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Get('skills')
   listSkills(
     @Query('page') page?: string,
@@ -70,18 +85,18 @@ export class AdminController {
     )
   }
 
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch('skills/:id/archive')
-  archiveSkill(@Param('id') id: string) {
-    return this.adminService.archiveSkill(id)
-  }
+  archiveSkill(@Param('id') id: string) { return this.adminService.archiveSkill(id) }
 
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Patch('skills/:id/restore')
-  restoreSkill(@Param('id') id: string) {
-    return this.adminService.restoreSkill(id)
-  }
+  restoreSkill(@Param('id') id: string) { return this.adminService.restoreSkill(id) }
 
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Delete('skills/:id')
-  deleteSkill(@Param('id') id: string) {
-    return this.adminService.deleteSkill(id)
-  }
+  deleteSkill(@Param('id') id: string) { return this.adminService.deleteSkill(id) }
 }

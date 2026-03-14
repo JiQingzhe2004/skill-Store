@@ -7,6 +7,19 @@ import { AppException } from '../common/exceptions/app.exception'
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /* ─── 初始化管理员 ─── */
+  async setupAdmin(userId: string, secret: string) {
+    const expected = process.env.ADMIN_SETUP_SECRET
+    if (!expected || secret !== expected) {
+      throw new AppException(HttpStatus.FORBIDDEN, 'INVALID_SECRET', '密钥错误')
+    }
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { role: 'ADMIN' },
+      select: { id: true, username: true, email: true, role: true },
+    })
+  }
+
   /* ─── 统计概览 ─── */
   async getStats() {
     const [userCount, skillCount, publishedCount, totalDownloads, totalStars] = await Promise.all([
