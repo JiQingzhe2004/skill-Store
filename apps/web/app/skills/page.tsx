@@ -81,20 +81,20 @@ export default async function SkillsPage({ searchParams }: Props) {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-0">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-4 h-4 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="w-5 h-5 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0">
                               {skill.author.avatar
                                 ? <img src={skill.author.avatar} alt={skill.author.username} className="w-full h-full object-cover" />
-                                : <User className="w-2.5 h-2.5 text-muted-foreground" />}
+                                : <User className="w-3 h-3 text-muted-foreground" />}
                             </div>
                             <span>{skill.author.username}</span>
                           </div>
                           {skill.tags && (
-                            <div className="flex items-center gap-1">
-                              <Tag className="w-3 h-3" />
-                              <span className="truncate max-w-[120px]">
-                                {skill.tags.split(',')[0]}
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Tag className="w-3.5 h-3.5" />
+                              <span className="truncate max-w-[100px]">
+                                {skill.tags.split(',')[0].trim()}
                               </span>
                             </div>
                           )}
