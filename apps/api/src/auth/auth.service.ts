@@ -22,6 +22,7 @@ type PublicAuthUser = {
   username: string
   role: UserRole
   isEmailVerified: boolean
+  avatar?: string | null
 }
 
 @Injectable()
@@ -235,6 +236,7 @@ export class AuthService {
       username: user.username,
       role: user.role,
       isEmailVerified: user.isEmailVerified,
+      avatar: user.avatar ?? null,
     }
   }
 }

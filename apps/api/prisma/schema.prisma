@@ -25,6 +25,8 @@ model User {
   passwordHash    String      @map("password_hash") @db.VarChar(255)
   isEmailVerified Boolean     @default(false) @map("is_email_verified")
   role            UserRole    @default(USER)
+  avatar          String?     @db.LongText
+  bio             String?     @db.VarChar(200)
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   lastLoginAt     DateTime?   @map("last_login_at")

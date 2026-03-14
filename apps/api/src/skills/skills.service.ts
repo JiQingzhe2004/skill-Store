@@ -154,7 +154,7 @@ export class SkillsService {
         id: true, slug: true, name: true, description: true,
         tags: true, latestVersion: true, visibility: true, status: true,
         createdAt: true, updatedAt: true,
-        author: { select: { username: true } },
+        author: { select: { username: true, avatar: true } },
         versions: {
           where: { publishedAt: { not: null } },
           orderBy: { createdAt: 'desc' },
@@ -181,7 +181,7 @@ export class SkillsService {
         select: {
           id: true, slug: true, name: true, description: true,
           tags: true, latestVersion: true, updatedAt: true,
-          author: { select: { username: true } },
+          author: { select: { username: true, avatar: true } },
         },
       }),
       this.prisma.skill.count({

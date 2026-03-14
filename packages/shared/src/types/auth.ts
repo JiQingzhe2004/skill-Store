@@ -14,6 +14,7 @@ export type AuthUser = {
   username: string
   role: UserRole
   isEmailVerified: boolean
+  avatar?: string | null
 }
 
 export type RegisterPayload = {

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `users` ADD COLUMN `avatar` LONGTEXT NULL,
+    ADD COLUMN `bio` VARCHAR(200) NULL;

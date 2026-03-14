@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { Store, LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus } from 'lucide-react'
 import { Button } from './ui/button'
@@ -21,6 +21,7 @@ type NavUser = {
   username: string
   email?: string
   role?: string
+  avatar?: string | null
 } | null
 
 type SiteNavProps = {
@@ -32,6 +33,7 @@ type SiteNavProps = {
 
 export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail = '' }: SiteNavProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [loggingOut, setLoggingOut] = useState(false)
   const [authOpen, setAuthOpen] = useState(!!initialAuthView)
   const [authView, setAuthView] = useState<AuthView>(initialAuthView ?? 'login')
@@ -56,7 +58,12 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
           Skill Store
         </Link>
         <nav className="hidden sm:flex items-center gap-1 ml-6">
-          <Button variant="ghost" size="sm" asChild>
+          <Button
+            variant={pathname.startsWith('/skills') ? 'secondary' : 'ghost'}
+            size="sm"
+            asChild
+            className={pathname.startsWith('/skills') ? 'font-medium' : ''}
+          >
             <Link href="/skills">技能市场</Link>
           </Button>
         </nav>
@@ -66,8 +73,10 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/50 px-3 py-1.5 text-sm transition-colors hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <User className="h-3.5 w-3.5" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary overflow-hidden">
+                    {user.avatar
+                      ? <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                      : <User className="h-3.5 w-3.5" />}
                   </div>
                   <span className="max-w-[120px] truncate font-medium">{user.username}</span>
                   <ChevronDown className="h-3 w-3 text-muted-foreground" />
