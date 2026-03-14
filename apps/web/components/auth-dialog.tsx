@@ -133,7 +133,7 @@ function RegisterView({ switchTo }: { switchTo: (v: AuthView, email?: string) =>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="reg-username" className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-muted-foreground" />{messages.common.username}</Label>
-          <Input id="reg-username" autoComplete="username" aria-invalid={Boolean(errors.username)} {...register('username')} />
+          <Input id="reg-username" autoComplete="username" placeholder="可使用中文，2-32 个字符" aria-invalid={Boolean(errors.username)} {...register('username')} />
           {errors.username && <p className="text-xs text-destructive">{errors.username.message}</p>}
         </div>
         <div className="grid gap-2">

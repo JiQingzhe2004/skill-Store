@@ -10,8 +10,7 @@ export class RegisterDto {
 
   @Transform(({ value }) => String(value).trim())
   @IsString()
-  @Length(2, 32, { message: '用户名长度需在 2 到 32 位之间' })
-  @Matches(/^[A-Za-z0-9_-]+$/, { message: '用户名仅支持字母、数字、下划线和连字符' })
+  @Length(2, 32, { message: '昵称长度需在 2 到 32 个字符之间' })
   username!: string
 
   @IsString()

@@ -10,9 +10,8 @@ export const emailSchema = z
 export const usernameSchema = z
   .string()
   .trim()
-  .min(2, '用户名至少 2 个字符')
-  .max(32, '用户名最多 32 个字符')
-  .regex(/^[A-Za-z0-9_-]+$/, '用户名仅支持字母、数字、下划线和连字符')
+  .min(2, '昵称至少 2 个字符')
+  .max(32, '昵称最多 32 个字符')
 
 export const passwordSchema = z
   .string()
