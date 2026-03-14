@@ -55,7 +55,12 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
           <Store className="w-4 h-4" />
           Skill Store
         </Link>
-        <div className="flex items-center gap-2">
+        <nav className="hidden sm:flex items-center gap-1 ml-6">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/marketplace">技能市场</Link>
+          </Button>
+        </nav>
+        <div className="flex items-center gap-2 ml-auto">
           <ThemeToggle />
           {user ? (
             <DropdownMenu>
