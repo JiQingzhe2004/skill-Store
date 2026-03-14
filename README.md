@@ -125,6 +125,32 @@ pnpm docker:prod
 - api：NestJS `nest build` → 只保留 `dist/` 和生产依赖
 - web：Next.js standalone 模式 → 只保留 `.next/standalone/`
 
+### 从 Docker Hub 直接运行（无需源码）
+
+镜像已发布到 Docker Hub，任何人可以直接拉取运行，无需克隆代码。
+
+```bash
+# 1. 下载 compose 文件
+curl -O https://raw.githubusercontent.com/aiqiji/skill-store/dev/docker-compose.hub.yml
+curl -O https://raw.githubusercontent.com/aiqiji/skill-store/dev/apps/api/.env.production
+
+# 2. 编辑环境变量（填写真实的 JWT secret、SMTP 等）
+cp .env.production .env.production.local
+vim .env.production  # 或用任意编辑器
+
+# 3. 启动
+docker compose -f docker-compose.hub.yml up -d
+```
+
+启动后：
+- 前端：http://localhost:3000
+- 后端：http://localhost:3001
+- MySQL：localhost:3306
+
+Docker Hub 镜像地址：
+- `aiqiji/skill-store-api:latest`
+- `aiqiji/skill-store-web:latest`
+
 ### 停止容器
 
 ```bash
