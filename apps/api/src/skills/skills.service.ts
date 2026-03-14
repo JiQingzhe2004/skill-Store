@@ -37,6 +37,7 @@ export class SkillsService {
         id: true, slug: true, name: true, description: true,
         tags: true, visibility: true, status: true,
         latestVersion: true, createdAt: true, updatedAt: true,
+        downloadCount: true, starCount: true, likeCount: true,
       },
     })
   }

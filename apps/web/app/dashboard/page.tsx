@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { Plus, Boxes, Settings, Store, Download, Star, ArrowRight, Package, User } from 'lucide-react'
+import { Plus, Boxes, Settings, Store, Download, Star, ThumbsUp, ArrowRight, Package, User } from 'lucide-react'
 import { SiteNav } from '../../components/site-nav'
 import { Button } from '../../components/ui/button'
 import { Badge } from '../../components/ui/badge'
@@ -17,6 +17,7 @@ type Skill = {
   latestVersion: string | null
   downloadCount: number
   starCount: number
+  likeCount: number
   updatedAt: string
 }
 
@@ -34,8 +35,9 @@ export default async function DashboardPage() {
 
   const publishedSkills = skills.filter(s => s.status === 'PUBLISHED')
   const draftSkills = skills.filter(s => s.status === 'DRAFT')
-  const totalDownloads = skills.reduce((acc, s) => acc + s.downloadCount, 0)
-  const totalStars = skills.reduce((acc, s) => acc + s.starCount, 0)
+  const totalDownloads = skills.reduce((acc, s) => acc + (s.downloadCount ?? 0), 0)
+  const totalStars = skills.reduce((acc, s) => acc + (s.starCount ?? 0), 0)
+  const totalLikes = skills.reduce((acc, s) => acc + (s.likeCount ?? 0), 0)
 
   const statusLabel: Record<string, string> = {
     DRAFT: '草稿', PENDING_REVIEW: '审核中', PUBLISHED: '已发布',
@@ -73,7 +75,7 @@ export default async function DashboardPage() {
           </div>
 
           {/* 数据概览 */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card className="border-border/60">
               <CardContent className="pt-5">
                 <div className="flex items-center gap-3">
@@ -122,6 +124,19 @@ export default async function DashboardPage() {
                   <div>
                     <p className="text-2xl font-bold">{totalStars}</p>
                     <p className="text-xs text-muted-foreground">获得星标</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border/60">
+              <CardContent className="pt-5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-pink-500/10">
+                    <ThumbsUp className="w-4 h-4 text-pink-600 dark:text-pink-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{totalLikes}</p>
+                    <p className="text-xs text-muted-foreground">获得点赞</p>
                   </div>
                 </div>
               </CardContent>
@@ -185,7 +200,10 @@ export default async function DashboardPage() {
                           <Download className="w-3 h-3" />{skill.downloadCount}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Star className="w-3 h-3" />{skill.starCount}
+                          <Star className="w-3 h-3" />{skill.starCount ?? 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <ThumbsUp className="w-3 h-3" />{skill.likeCount ?? 0}
                         </span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </div>
