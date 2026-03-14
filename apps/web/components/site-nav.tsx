@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Store, LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus, Star } from 'lucide-react'
+import { Store, LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus, Star, Shield } from 'lucide-react'
 import { Button } from './ui/button'
 import {
   DropdownMenu,
@@ -92,6 +92,17 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {user.role === 'ADMIN' && (
+                  <>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/admin">
+                        <Shield className="mr-2 h-4 w-4 text-destructive" />
+                        <span className="text-destructive">管理后台</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem asChild className="cursor-pointer">
                   <Link href="/dashboard">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
