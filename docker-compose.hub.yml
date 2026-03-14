@@ -1,0 +1,64 @@
+# 从 Docker Hub 直接拉取镜像运行，无需源码
+# 使用方法：
+#   1. 复制 apps/api/.env.production 为 .env.production，填写真实配置
+#   2. docker compose -f docker-compose.hub.yml up -d
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: skill-store-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: skill_store
+      MYSQL_USER: skill_store
+      MYSQL_PASSWORD: skill_store
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: ["mysqld", "--mysql-native-password=ON"]
+    networks:
+      - skill-store-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "skill_store", "-pskill_store"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: aiqiji/skill-store-api:latest
+    container_name: skill-store-api
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: mysql://skill_store:skill_store@mysql:3306/skill_store
+      SHADOW_DATABASE_URL: mysql://skill_store:skill_store@mysql:3306/skill_store_shadow
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - skill-store-network
+
+  web:
+    image: aiqiji/skill-store-web:latest
+    container_name: skill-store-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_BASE_URL: http://api:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - skill-store-network
+
+volumes:
+  mysql_data:
+
+networks:
+  skill-store-network:
+    driver: bridge
