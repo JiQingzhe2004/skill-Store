@@ -24,6 +24,26 @@
     --radius: 0.9rem;
   }
 
+  .dark {
+    --background: 0 0% 8%;
+    --foreground: 0 0% 93%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 93%;
+    --primary: 0 0% 93%;
+    --primary-foreground: 0 0% 8%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 80%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 93%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 93%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 60%;
+  }
+
   * {
     @apply border-border;
   }
@@ -35,5 +55,9 @@
   body {
     @apply min-h-screen bg-background text-foreground antialiased;
     background-image: radial-gradient(circle at top, rgba(99, 102, 241, 0.18), transparent 32%), linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  }
+
+  .dark body {
+    background-image: none;
   }
 }

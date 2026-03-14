@@ -14,3 +14,21 @@ apps/api/generated
 /.vscode
 
 plan.md
+
+# AI agent configs (local only)
+.claude/
+.mcp.json
+.agents/
+.agent/
+.kiro/
+.trae/
+.windsurf/
+apps/web/.claude/
+apps/web/.mcp.json
+apps/web/.agents/
+apps/web/.agent/
+apps/web/.kiro/
+apps/web/.trae/
+apps/web/.windsurf/
+apps/web/skills/
+apps/web/skills-lock.json
