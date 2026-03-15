@@ -3,6 +3,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { ReactNode } from 'react'
 import { Inter } from 'next/font/google'
+import { Toaster } from 'sonner'
 
 import { messages } from '../messages'
 
@@ -23,7 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         />
       </head>
-      <body className={`${inter.variable} font-sans min-h-screen bg-background text-foreground antialiased`}>{children}</body>
+      <body className={`${inter.variable} font-sans min-h-screen bg-background text-foreground antialiased`}>{children}<Toaster richColors position="top-right" /></body>
     </html>
   )
 }

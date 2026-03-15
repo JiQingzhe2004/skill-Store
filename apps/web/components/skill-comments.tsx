@@ -17,6 +17,7 @@ import {
 } from './ui/alert-dialog'
 import { apiRequest, getErrorMessage } from '../lib/api'
 import { cn } from '../lib/utils'
+import { toast } from 'sonner'
 
 type CommentUser = { id: string; username: string; avatar: string | null }
 
@@ -25,7 +26,7 @@ type Comment = {
   content: string
   createdAt: string
   user: CommentUser
-  replies: Comment[]
+  replies?: Comment[]
   parentId: string | null
 }
 
@@ -69,7 +70,8 @@ function CommentItem({
 
   const handleDelete = async () => {
     const res = await apiRequest(`/skills/public/comments/${comment.id}`, { method: 'DELETE' })
-    if (res.success) { setDeleteOpen(false); onDeleted(comment.id) }
+    if (res.success) { setDeleteOpen(false); onDeleted(comment.id); toast.success('评论已删除') }
+    else toast.error(getErrorMessage(res))
   }
 
   const handleReply = async () => {
@@ -85,8 +87,9 @@ function CommentItem({
       onReplied(res.data)
       setReplyContent('')
       setShowReply(false)
+      toast.success('回复成功')
     } else {
-      setError(getErrorMessage(res))
+      toast.error(getErrorMessage(res))
     }
   }
 
@@ -144,7 +147,7 @@ function CommentItem({
           </div>
         )}
         {error && <p className="text-xs text-destructive mt-1">{error}</p>}
-        {comment.replies.map(reply => (
+        {(comment.replies ?? []).map(reply => (
           <CommentItem key={reply.id} comment={reply} slug={slug} currentUserId={currentUserId}
             isAdmin={isAdmin} onDeleted={onDeleted} onReplied={() => {}} depth={depth + 1} />
         ))}
@@ -181,21 +184,22 @@ export function SkillComments({ slug, isLoggedIn, currentUserId, currentUserAvat
       setComments(prev => [res.data!, ...prev])
       setTotal(prev => prev + 1)
       setContent('')
+      toast.success('评论发表成功')
     } else {
-      setError(getErrorMessage(res))
+      toast.error(getErrorMessage(res))
     }
   }
 
   const handleDeleted = (id: string) => {
     setComments(prev => prev.filter(c => c.id !== id).map(c => ({
-      ...c, replies: c.replies.filter(r => r.id !== id)
+      ...c, replies: (c.replies ?? []).filter(r => r.id !== id)
     })))
     setTotal(prev => prev - 1)
   }
 
   const handleReplied = (reply: Comment) => {
     setComments(prev => prev.map(c =>
-      c.id === reply.parentId ? { ...c, replies: [...c.replies, reply] } : c
+      c.id === reply.parentId ? { ...c, replies: [...(c.replies ?? []), reply] } : c
     ))
   }
 
