@@ -174,6 +174,7 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
 
   return (
     <div className="grid gap-6">
+      <Tabs defaultValue="content">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -191,25 +192,21 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
             <p className="text-xs text-muted-foreground font-mono">{skill.slug}</p>
           </div>
         </div>
+        <TabsList className="h-9">
+          <TabsTrigger value="info" className="gap-1.5 text-xs">
+            <Info className="w-3.5 h-3.5" />基本信息
+          </TabsTrigger>
+          <TabsTrigger value="content" className="gap-1.5 text-xs">
+            <Code2 className="w-3.5 h-3.5" />技能内容
+          </TabsTrigger>
+          <TabsTrigger value="versions" className="gap-1.5 text-xs">
+            <History className="w-3.5 h-3.5" />版本历史{versions.length > 0 && ` (${versions.length})`}
+          </TabsTrigger>
+        </TabsList>
         <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={onDelete}>
           <Trash2 className="w-3.5 h-3.5 mr-1.5" />删除
         </Button>
       </div>
-
-      <Tabs defaultValue="content">
-        <div className="flex justify-center mb-4">
-          <TabsList className="h-10">
-            <TabsTrigger value="info" className="gap-1.5">
-              <Info className="w-3.5 h-3.5" />基本信息
-            </TabsTrigger>
-            <TabsTrigger value="content" className="gap-1.5">
-              <Code2 className="w-3.5 h-3.5" />技能内容
-            </TabsTrigger>
-            <TabsTrigger value="versions" className="gap-1.5">
-              <History className="w-3.5 h-3.5" />版本历史{versions.length > 0 && ` (${versions.length})`}
-            </TabsTrigger>
-          </TabsList>
-        </div>
 
         {/* ── Tab 1：基本信息 ── */}
         <TabsContent value="info">
