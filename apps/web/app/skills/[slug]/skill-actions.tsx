@@ -86,33 +86,27 @@ export function SkillActions({
     <div className="grid gap-2">
       {errMsg && <p className="text-xs text-destructive text-right">{errMsg}</p>}
       {installMsg && <p className="text-xs text-green-600 text-right">{installMsg}</p>}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col items-center gap-0.5">
-            <Button
-              variant={starred ? 'default' : 'outline'}
-              size="sm"
-              onClick={handleStar}
-              disabled={starLoading}
-              className="w-9 h-9"
-            >
-              <Star className={`w-4 h-4 ${starred ? 'fill-current' : ''}`} />
-            </Button>
-            <span className="text-[11px] text-muted-foreground">{starCount}</span>
-          </div>
-          <div className="flex flex-col items-center gap-0.5">
-            <Button
-              variant={liked ? 'default' : 'outline'}
-              size="sm"
-              onClick={handleLike}
-              disabled={likeLoading}
-              className="w-9 h-9"
-            >
-              <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
-            </Button>
-            <span className="text-[11px] text-muted-foreground">{likeCount}</span>
-          </div>
-        </div>
+      <div className="flex items-center gap-2">
+          <Button
+            variant={starred ? 'default' : 'outline'}
+            size="sm"
+            onClick={handleStar}
+            disabled={starLoading}
+            className="gap-1.5"
+          >
+            <Star className={`w-4 h-4 ${starred ? 'fill-current' : ''}`} />
+            {starCount}
+          </Button>
+          <Button
+            variant={liked ? 'default' : 'outline'}
+            size="sm"
+            onClick={handleLike}
+            disabled={likeLoading}
+            className="gap-1.5"
+          >
+            <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+            {likeCount}
+          </Button>
         <Button size="lg" className="ml-2 gap-2" onClick={handleInstall} disabled={installLoading}>
           <Download className="w-4 h-4" />
           {installLoading ? '处理中...' : `安装 · ${downloadCount}`}
