@@ -66,7 +66,7 @@ function CommentItem({
     setLoading(true); setError('')
     const res = await apiRequest<Comment>(`/skills/public/${slug}/comments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+
       body: JSON.stringify({ content: replyContent.trim(), parentId: comment.id }),
     })
     setLoading(false)
@@ -151,7 +151,7 @@ export function SkillComments({ slug, isLoggedIn, currentUserId, currentUserAvat
     setSubmitting(true); setError('')
     const res = await apiRequest<Comment>(`/skills/public/${slug}/comments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+
       body: JSON.stringify({ content: content.trim() }),
     })
     setSubmitting(false)
