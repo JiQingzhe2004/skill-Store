@@ -51,10 +51,22 @@ function SyntaxHighlighterThemed({ language, content }: { language: string; cont
   return (
     <SyntaxHighlighter
       language={language}
-      style={dark ? oneDark : oneLight}
+      style={{
+        ...(dark ? oneDark : oneLight),
+        'pre[class*="language-"]': {
+          ...(dark ? oneDark : oneLight)['pre[class*="language-"]'],
+          background: 'transparent',
+          backgroundColor: 'transparent',
+        },
+        'code[class*="language-"]': {
+          ...(dark ? oneDark : oneLight)['code[class*="language-"]'],
+          background: 'transparent',
+          backgroundColor: 'transparent',
+        },
+      }}
       showLineNumbers
       lineNumberStyle={{ color: dark ? '#636d83' : '#999', fontSize: '0.75rem', userSelect: 'none', minWidth: '3em' }}
-      customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8rem', background: 'transparent' }}
+      customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8rem', background: 'transparent', backgroundColor: 'transparent' }}
     >
       {content}
     </SyntaxHighlighter>
