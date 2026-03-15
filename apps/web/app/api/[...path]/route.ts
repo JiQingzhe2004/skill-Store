@@ -3,15 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3001'
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     path: string[]
-  }
+  }>
 }
 
 export const dynamic = 'force-dynamic'
 
 async function proxyRequest(request: NextRequest, context: RouteContext) {
-  const params = await Promise.resolve(context.params)
+  const params = await context.params
   const upstreamUrl = new URL(`/api/${params.path.join('/')}`, API_BASE_URL)
   upstreamUrl.search = request.nextUrl.search
 
