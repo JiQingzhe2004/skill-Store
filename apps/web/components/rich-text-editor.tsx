@@ -161,6 +161,7 @@ type Props = {
 
 export function RichTextEditor({ value, onChange, placeholder = '在这里编写技能的详细内容...', className, minHeight = 400 }: Props) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({ codeBlock: false }),
       Underline,
