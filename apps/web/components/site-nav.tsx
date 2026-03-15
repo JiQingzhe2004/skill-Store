@@ -14,8 +14,10 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { ThemeToggle } from './theme-toggle'
+import { LanguageSwitcher } from './language-switcher'
 import { AuthDialog, AuthView } from './auth-dialog'
 import { apiRequest } from '../lib/api'
+import { getMessages, type Locale } from '../messages'
 
 type NavUser = {
   username: string
@@ -26,14 +28,21 @@ type NavUser = {
 
 type SiteNavProps = {
   user?: NavUser
-  /** 如果通过 URL 参数传入要打开的认证弹窗视图 */
   initialAuthView?: AuthView | null
   initialAuthEmail?: string
+}
+
+function useLocale() {
+  const pathname = usePathname()
+  const segments = pathname.split('/')
+  return segments[1] || 'zh-CN'
 }
 
 export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail = '' }: SiteNavProps) {
   const router = useRouter()
   const pathname = usePathname()
+  const locale = useLocale()
+  const m = getMessages(locale as Locale)
   const [loggingOut, setLoggingOut] = useState(false)
   const [authOpen, setAuthOpen] = useState(!!initialAuthView)
   const [authView, setAuthView] = useState<AuthView>(initialAuthView ?? 'login')
@@ -46,28 +55,31 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
   const handleLogout = async () => {
     setLoggingOut(true)
     await apiRequest('/auth/logout', { method: 'POST' })
-    router.push('/')
+    router.push(`/${locale}`)
     router.refresh()
   }
+
+  const pathWithoutLocale = pathname.replace(new RegExp(`^/${locale}`), '')
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 px-6 py-3.5 flex items-center justify-between bg-background/75 backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-base tracking-tight hover:opacity-80 transition-opacity">
+        <Link href={`/${locale}`} className="flex items-center gap-2 font-semibold text-base tracking-tight hover:opacity-80 transition-opacity">
           <Store className="w-4 h-4" />
           Skill Store
         </Link>
         <nav className="hidden sm:flex items-center gap-1 ml-6">
           <Button
-            variant={pathname.startsWith('/skills') ? 'secondary' : 'ghost'}
+            variant={pathWithoutLocale.startsWith('/skills') ? 'secondary' : 'ghost'}
             size="sm"
             asChild
-            className={pathname.startsWith('/skills') ? 'font-medium' : ''}
+            className={pathWithoutLocale.startsWith('/skills') ? 'font-medium' : ''}
           >
-            <Link href="/skills">技能市场</Link>
+            <Link href={`/${locale}/skills`}>{m.nav.skillMarket}</Link>
           </Button>
         </nav>
         <div className="flex items-center gap-2 ml-auto">
+          <LanguageSwitcher />
           <ThemeToggle />
           {user ? (
             <DropdownMenu>
@@ -95,42 +107,42 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
                 {user.role === 'ADMIN' && (
                   <>
                     <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href="/admin">
+                      <Link href={`/${locale}/admin`}>
                         <Shield className="mr-2 h-4 w-4 text-destructive" />
-                        <span className="text-destructive">管理后台</span>
+                        <span className="text-destructive">{m.nav.adminBackend}</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/dashboard">
+                  <Link href={`/${locale}/dashboard`}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    控制台
+                    {m.nav.dashboard}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/dashboard/skills">
+                  <Link href={`/${locale}/dashboard/skills`}>
                     <Boxes className="mr-2 h-4 w-4" />
-                    我的技能
+                    {m.nav.mySkills}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/dashboard/skills/new">
+                  <Link href={`/${locale}/dashboard/skills/new`}>
                     <Plus className="mr-2 h-4 w-4" />
-                    创建技能
+                    {m.nav.createSkill}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/dashboard/stars">
+                  <Link href={`/${locale}/dashboard/stars`}>
                     <Star className="mr-2 h-4 w-4" />
-                    我的星标
+                    {m.nav.myStars}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">
-                  <Link href="/dashboard/settings">
+                  <Link href={`/${locale}/dashboard/settings`}>
                     <Settings className="mr-2 h-4 w-4" />
-                    账号设置
+                    {m.nav.accountSettings}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -140,7 +152,7 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
                   disabled={loggingOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  {loggingOut ? '退出中...' : '退出登录'}
+                  {loggingOut ? m.nav.loggingOut : m.nav.logout}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -153,11 +165,11 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
                 onClick={() => openAuth('login')}
               >
                 <LogIn className="w-3.5 h-3.5 mr-1.5" />
-                登录
+                {m.nav.login}
               </Button>
               <Button size="sm" onClick={() => openAuth('register')}>
                 <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-                注册
+                {m.nav.register}
               </Button>
             </>
           )}

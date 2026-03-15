@@ -6,8 +6,10 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useParams } from 'next/navigation'
 import { cn } from '../lib/utils'
 import { Button } from './ui/button'
+import { getMessages, type Locale } from '../messages'
 
 type FileEntry = {
   id: string
@@ -180,7 +182,9 @@ function FileRow({ node, depth = 0, onFileClick, onDirClick, openDirs }: {
 }
 
 // ─── 代码查看器 ───────────────────────────────────────────────────────────────
-function FileCodeView({ file, onBack }: { file: FileEntry; onBack: () => void }) {
+type Messages = ReturnType<typeof getMessages>
+
+function FileCodeView({ file, onBack, m }: { file: FileEntry; onBack: () => void; m: Messages }) {
   const lang = getLang(file.path)
   const isMarkdown = lang === 'markdown'
   const [viewRaw, setViewRaw] = useState(false)
@@ -195,24 +199,24 @@ function FileCodeView({ file, onBack }: { file: FileEntry; onBack: () => void })
             onClick={onBack}
             className="text-primary hover:underline font-medium"
           >
-            文件
+            {m.fileViewer.file}
           </button>
           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="font-medium">{file.path.split('/').pop()}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">{lines} 行 · {formatSize(file.size)}</span>
+          <span className="text-xs text-muted-foreground">{m.fileViewer.lineCount.replace('{lines}', String(lines)).replace('{size}', formatSize(file.size))}</span>
           {isMarkdown && (
             <div className="flex items-center rounded border border-border/60 overflow-hidden">
               <button
-                title="渲染预览"
+                title={m.fileViewer.renderPreview}
                 onClick={() => setViewRaw(false)}
                 className={cn('px-2 py-1 transition-colors', !viewRaw ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}
               >
                 <BookOpen className="w-3.5 h-3.5" />
               </button>
               <button
-                title="查看源码"
+                title={m.fileViewer.viewSource}
                 onClick={() => setViewRaw(true)}
                 className={cn('px-2 py-1 transition-colors', viewRaw ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}
               >
@@ -291,6 +295,8 @@ function TreeNode({
 }
 
 export function SkillFileViewer({ files }: { files: FileEntry[] }) {
+  const { locale } = useParams<{ locale: string }>()
+  const m = getMessages(locale as Locale)
   const tree = buildTree(files)
   const readme = files.find(f => {
     const name = f.path.split('/').pop()?.toLowerCase() ?? ''
@@ -318,7 +324,7 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
     <div className="mt-6 rounded-lg border border-border/60 overflow-hidden bg-white dark:bg-zinc-900">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/60 bg-muted/30">
-        <span className="text-sm font-medium text-muted-foreground">{files.length} 个文件</span>
+        <span className="text-sm font-medium text-muted-foreground">{m.fileViewer.files.replace('{count}', String(files.length))}</span>
         {selectedFile && (
           <span className="text-xs text-muted-foreground font-mono">{selectedFile.path}</span>
         )}
@@ -339,11 +345,11 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
         <div className="flex-1 overflow-auto relative">
           {selectedFile && isMarkdown && (
             <div className="absolute top-2 right-2 z-10 flex items-center rounded border border-border/60 overflow-hidden shadow-sm">
-              <button title="渲染预览" onClick={() => setViewRaw(false)}
+              <button title={m.fileViewer.renderPreview} onClick={() => setViewRaw(false)}
                 className={cn('px-2 py-1 transition-colors', !viewRaw ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}>
                 <BookOpen className="w-3.5 h-3.5" />
               </button>
-              <button title="查看源码" onClick={() => setViewRaw(true)}
+              <button title={m.fileViewer.viewSource} onClick={() => setViewRaw(true)}
                 className={cn('px-2 py-1 transition-colors', viewRaw ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}>
                 <Code className="w-3.5 h-3.5" />
               </button>
@@ -358,7 +364,7 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
               <SyntaxHighlighterThemed language={lang} content={selectedFile.content} />
             )
           ) : (
-            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">选择文件查看内容</div>
+            <div className="flex items-center justify-center h-full text-sm text-muted-foreground">{m.fileViewer.selectFile}</div>
           )}
         </div>
       </div>
