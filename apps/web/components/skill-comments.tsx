@@ -22,6 +22,8 @@ type Props = {
   slug: string
   isLoggedIn: boolean
   currentUserId?: string
+  currentUserAvatar?: string | null
+  currentUsername?: string
   isAdmin?: boolean
 }
 
@@ -129,7 +131,7 @@ function CommentItem({
   )
 }
 
-export function SkillComments({ slug, isLoggedIn, currentUserId, isAdmin }: Props) {
+export function SkillComments({ slug, isLoggedIn, currentUserId, currentUserAvatar, currentUsername, isAdmin }: Props) {
   const [comments, setComments] = useState<Comment[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -187,9 +189,13 @@ export function SkillComments({ slug, isLoggedIn, currentUserId, isAdmin }: Prop
       <div className="px-6 py-4 border-b border-border/40">
         {isLoggedIn ? (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-              <User className="w-4 h-4 text-muted-foreground" />
-            </div>
+            {currentUserAvatar ? (
+              <img src={currentUserAvatar} alt={currentUsername ?? ''} className="w-8 h-8 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
             <div className="flex-1">
               <Textarea
                 rows={3}

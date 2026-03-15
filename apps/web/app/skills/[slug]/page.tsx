@@ -129,6 +129,8 @@ export default async function SkillDetailPage({ params }: Props) {
             slug={skill.slug}
             isLoggedIn={!!user}
             currentUserId={user?.id}
+            currentUserAvatar={user?.avatar}
+            currentUsername={user?.username}
             isAdmin={user?.role === 'ADMIN'}
           />
         </section>
