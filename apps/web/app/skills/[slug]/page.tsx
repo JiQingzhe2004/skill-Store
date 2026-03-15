@@ -12,6 +12,7 @@ import { SkillActions } from './skill-actions'
 import { RichTextContent } from '../../../components/rich-text-editor'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { SkillFileViewer } from '../../../components/skill-file-viewer'
 
 type SkillDetail = {
   id: string
@@ -38,6 +39,14 @@ type SkillDetail = {
   }[]
 }
 
+type SkillFile = {
+  id: string
+  path: string
+  content: string
+  encoding: string
+  size: number
+}
+
 type Props = { params: Promise<{ slug: string }> }
 
 export default async function SkillDetailPage({ params }: Props) {
@@ -49,12 +58,14 @@ export default async function SkillDetailPage({ params }: Props) {
 
   const user = await fetchCurrentUser({ host, cookieHeader })
   const res = await serverApiRequest<SkillDetail>(`/skills/public/${slug}`, { host, cookieHeader })
+  const filesRes = await serverApiRequest<{ files: SkillFile[] }>(`/skills/public/${slug}/files`, { host, cookieHeader })
   const interactionRes = user
     ? await serverApiRequest<{ starred: boolean; liked: boolean }>(`/skills/public/${slug}/me`, { host, cookieHeader })
     : null
 
   if (!res.success || !res.data) notFound()
   const skill = res.data
+  const skillFiles = filesRes.success && filesRes.data ? filesRes.data.files : []
 
   const initialStarred = interactionRes?.success && interactionRes.data ? interactionRes.data.starred : false
   const initialLiked = interactionRes?.success && interactionRes.data ? interactionRes.data.liked : false
@@ -160,6 +171,10 @@ export default async function SkillDetailPage({ params }: Props) {
                 )}
               </CardContent>
             </Card>
+          )}
+          {/* File Browser */}
+          {skillFiles.length > 0 && (
+            <SkillFileViewer files={skillFiles} />
           )}
         </section>
       </main>

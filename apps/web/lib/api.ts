@@ -1,11 +1,13 @@
 import { ApiResponse } from '@skill-store/shared'
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
+  const body = init?.body
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
   const response = await fetch(`/api${path}`, {
     credentials: 'include',
     ...init,
     headers: {
-      'content-type': 'application/json',
+      ...(isFormData ? {} : { 'content-type': 'application/json' }),
       ...(init?.headers ?? {}),
     },
   })

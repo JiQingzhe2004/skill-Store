@@ -275,6 +275,29 @@ export class SkillsService {
   }
 
   /* ─── 公开技能详情（by slug） ─── */
+  /* ─── 获取公开技能文件列表 ─── */
+  async getPublicFiles(slug: string) {
+    const skill = await this.prisma.skill.findUnique({
+      where: { slug },
+      include: {
+        versions: {
+          where: { publishedAt: { not: null } },
+          orderBy: { publishedAt: 'desc' },
+          take: 1,
+          include: {
+            files: {
+              select: { id: true, path: true, size: true, encoding: true, content: true },
+              orderBy: { path: 'asc' },
+            },
+          },
+        },
+      },
+    })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+    if (!skill.versions.length) return { files: [] }
+    return { files: skill.versions[0].files }
+  }
+
   /* ─── 安装技能 ─── */
   async install(slug: string, userId: string) {
     const skill = await this.prisma.skill.findUnique({
@@ -296,8 +319,8 @@ export class SkillsService {
     // 记录安装
     await this.prisma.userInstalledSkill.upsert({
       where: { userId_skillId: { userId, skillId: skill.id } },
-      create: { userId, skillId: skill.id, skillVersionId: version.id, installedVersion: version.version },
-      update: { skillVersionId: version.id, installedVersion: version.version },
+      create: { userId, skillId: skill.id, installedVersion: version.version },
+      update: { installedVersion: version.version },
     })
 
     // 更新下载计数

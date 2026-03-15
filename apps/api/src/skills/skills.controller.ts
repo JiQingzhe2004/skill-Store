@@ -34,6 +34,37 @@ export class SkillsController {
     return this.skillsService.findPublicBySlug(slug)
   }
 
+  /* ─── 互动/安装接口（public/:slug/*，需登录，放在 :id 前避免被抢匹配）─── */
+
+  @UseGuards(AccessTokenGuard)
+  @Post('public/:slug/star')
+  toggleStar(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.toggleStar(slug, user.sub)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('public/:slug/like')
+  toggleLike(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.toggleLike(slug, user.sub)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('public/:slug/me')
+  getUserInteraction(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.getUserInteraction(slug, user.sub)
+  }
+
+  @Get('public/:slug/files')
+  getPublicFiles(@Param('slug') slug: string) {
+    return this.skillsService.getPublicFiles(slug)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('public/:slug/install')
+  install(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.install(slug, user.sub)
+  }
+
   /* ─── 需要登录 ─── */
 
   @UseGuards(AccessTokenGuard)
@@ -84,32 +115,6 @@ export class SkillsController {
   @Get(':id/versions')
   findVersions(@CurrentUser() user: JwtUser, @Param('id') id: string) {
     return this.skillsService.findVersions(id, user.sub)
-  }
-
-  /* ─── 互动接口（公开，需登录）─── */
-
-  @UseGuards(AccessTokenGuard)
-  @Post('public/:slug/star')
-  toggleStar(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
-    return this.skillsService.toggleStar(slug, user.sub)
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Post('public/:slug/like')
-  toggleLike(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
-    return this.skillsService.toggleLike(slug, user.sub)
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Get('public/:slug/me')
-  getUserInteraction(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
-    return this.skillsService.getUserInteraction(slug, user.sub)
-  }
-
-  @UseGuards(AccessTokenGuard)
-  @Post('public/:slug/install')
-  install(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
-    return this.skillsService.install(slug, user.sub)
   }
 
   @UseGuards(AccessTokenGuard)

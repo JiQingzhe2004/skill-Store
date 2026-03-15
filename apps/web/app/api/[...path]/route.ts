@@ -22,10 +22,36 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
   }
 
   if (!['GET', 'HEAD'].includes(request.method)) {
-    init.body = await request.text()
+    const contentType = request.headers.get('content-type') ?? ''
+    if (contentType.includes('multipart/form-data')) {
+      init.body = await request.arrayBuffer()
+    } else {
+      init.body = await request.text()
+    }
   }
 
-  const upstreamResponse = await fetch(upstreamUrl, init)
+  let upstreamResponse: Response
+  try {
+    upstreamResponse = await fetch(upstreamUrl, init)
+  } catch (err) {
+    const cause = err instanceof Error ? err.cause : undefined
+    const code = cause && typeof (cause as NodeJS.ErrnoException).code === 'string' ? (cause as NodeJS.ErrnoException).code : ''
+    const message =
+      code === 'ECONNREFUSED'
+        ? 'API 服务未就绪或不可达，请确认 API 容器已启动（docker compose up -d api）'
+        : code === 'ECONNRESET' || code === 'EPIPE'
+          ? '上游连接被关闭，请检查 API 日志是否有报错'
+          : cause instanceof Error ? cause.message : '请求上游 API 失败'
+    return NextResponse.json(
+      {
+        success: false,
+        data: null,
+        error: { code: 'UPSTREAM_UNREACHABLE', message },
+      },
+      { status: 502 },
+    )
+  }
+
   const response = new NextResponse(upstreamResponse.body, {
     status: upstreamResponse.status,
   })
