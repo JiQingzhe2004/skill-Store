@@ -107,6 +107,75 @@ export class SkillsService {
     })
   }
 
+  /* ─── ZIP 上传版本 ─── */
+  async uploadVersion(skillId: string, authorId: string, files: import('./zip.service').ZipFile[], version: string, changelog?: string) {
+    await this.findOneOwned(skillId, authorId)
+
+    const existing = await this.prisma.skillVersion.findUnique({
+      where: { skillId_version: { skillId, version } },
+    })
+    if (existing) throw new AppException(HttpStatus.CONFLICT, 'VERSION_EXISTS', '该版本号已存在')
+
+    const latestVersion = await this.prisma.skillVersion.findFirst({
+      where: { skillId },
+      orderBy: { createdAt: 'desc' },
+      select: { version: true },
+    })
+    if (latestVersion) {
+      const cur = version.split('.').map(Number)
+      const prev = latestVersion.version.split('.').map(Number)
+      const isHigher = cur[0] > prev[0]
+        || (cur[0] === prev[0] && cur[1] > prev[1])
+        || (cur[0] === prev[0] && cur[1] === prev[1] && cur[2] > prev[2])
+      if (!isHigher) {
+        throw new AppException(HttpStatus.BAD_REQUEST, 'VERSION_MUST_INCREMENT', `版本号必须大于当前最新版本 ${latestVersion.version}`)
+      }
+    }
+
+    const skillMd = files.find(f => f.path === 'SKILL.md' || f.path.toLowerCase() === 'skill.md')
+    const content = skillMd?.content ?? ''
+
+    const skillVersion = await this.prisma.skillVersion.create({
+      data: {
+        skillId,
+        version,
+        content,
+        changelog,
+        files: {
+          create: files.map(f => ({
+            path: f.path,
+            content: f.content,
+            encoding: f.encoding,
+            size: f.size,
+          })),
+        },
+      },
+      include: { files: true },
+    })
+
+    return skillVersion
+  }
+
+  /* ─── 获取版本文件列表 ─── */
+  async getVersionFiles(skillId: string, versionId: string, authorId: string) {
+    await this.findOneOwned(skillId, authorId)
+    return this.prisma.skillVersionFile.findMany({
+      where: { versionId },
+      select: { id: true, path: true, encoding: true, size: true, createdAt: true },
+      orderBy: { path: 'asc' },
+    })
+  }
+
+  /* ─── 获取版本单个文件内容 ─── */
+  async getVersionFileContent(skillId: string, versionId: string, fileId: string, authorId: string) {
+    await this.findOneOwned(skillId, authorId)
+    const file = await this.prisma.skillVersionFile.findFirst({
+      where: { id: fileId, versionId },
+    })
+    if (!file) throw new AppException(HttpStatus.NOT_FOUND, 'FILE_NOT_FOUND', '文件不存在')
+    return file
+  }
+
   /* ─── 发布版本 ─── */
   async publishVersion(skillId: string, versionId: string, authorId: string) {
     const skill = await this.findOneOwned(skillId, authorId)

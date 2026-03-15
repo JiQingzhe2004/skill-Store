@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { JwtUser } from '../common/types/jwt-user'
 import { AccessTokenGuard } from '../auth/guards/access-token.guard'
@@ -6,10 +7,14 @@ import { SkillsService } from './skills.service'
 import { CreateSkillDto } from './dto/create-skill.dto'
 import { UpdateSkillDto } from './dto/update-skill.dto'
 import { CreateVersionDto } from './dto/create-version.dto'
+import { ZipService } from './zip.service'
 
 @Controller('skills')
 export class SkillsController {
-  constructor(private readonly skillsService: SkillsService) {}
+  constructor(
+    private readonly skillsService: SkillsService,
+    private readonly zipService: ZipService,
+  ) {}
 
   /* ─── 公开接口 ─── */
 
@@ -99,6 +104,46 @@ export class SkillsController {
   @Get('public/:slug/me')
   getUserInteraction(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
     return this.skillsService.getUserInteraction(slug, user.sub)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post(':id/versions/upload')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  async uploadVersion(
+    @CurrentUser() user: JwtUser,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('version') version: string,
+    @Body('changelog') changelog?: string,
+  ) {
+    if (!file) throw new BadRequestException('请上传 ZIP 文件')
+    if (!version) throw new BadRequestException('请提供版本号')
+    if (!file.originalname.endsWith('.zip') && file.mimetype !== 'application/zip') {
+      throw new BadRequestException('只支持 ZIP 格式')
+    }
+    const files = await this.zipService.extractZip(file.buffer)
+    return this.skillsService.uploadVersion(id, user.sub, files, version, changelog)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get(':id/versions/:versionId/files')
+  getVersionFiles(
+    @CurrentUser() user: JwtUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
+    return this.skillsService.getVersionFiles(id, versionId, user.sub)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Get(':id/versions/:versionId/files/:fileId')
+  getVersionFileContent(
+    @CurrentUser() user: JwtUser,
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+    @Param('fileId') fileId: string,
+  ) {
+    return this.skillsService.getVersionFileContent(id, versionId, fileId, user.sub)
   }
 
   @UseGuards(AccessTokenGuard)

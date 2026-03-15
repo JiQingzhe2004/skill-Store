@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
-import { ArrowLeft, Save, Send, Trash2, CheckCircle2, Clock, FileText, Code2, History, Info } from 'lucide-react'
+import { ArrowLeft, Save, Send, Trash2, CheckCircle2, Clock, FileText, Code2, History, Info, Upload, FolderArchive } from 'lucide-react'
 
 import { Button } from '../../../../components/ui/button'
 import { Input } from '../../../../components/ui/input'
@@ -92,6 +92,11 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
   const [versions, setVersions] = useState(initVersions)
   const [infoMsg, setInfoMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const [contentMsg, setContentMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [zipMsg, setZipMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [zipUploading, setZipUploading] = useState(false)
+  const [zipVersion, setZipVersion] = useState('')
+  const [zipChangelog, setZipChangelog] = useState('')
+  const [zipFile, setZipFile] = useState<File | null>(null)
   const [publishMsg, setPublishMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   const flash = (setter: typeof setInfoMsg, type: 'ok' | 'err', text: string) => {
@@ -157,6 +162,28 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
     if (!res.success) { flash(setPublishMsg, 'err', getErrorMessage(res)); return }
     setVersions(prev => prev.map(v => v.id === versionId ? { ...v, publishedAt: new Date().toISOString() } : v))
     flash(setPublishMsg, 'ok', '✓ 已发布')
+  }
+
+  const onUploadZip = async () => {
+    if (!zipFile || !zipVersion) return
+    setZipUploading(true)
+    setZipMsg(null)
+    const formData = new FormData()
+    formData.append('file', zipFile)
+    formData.append('version', zipVersion)
+    if (zipChangelog) formData.append('changelog', zipChangelog)
+    const res = await apiRequest(`/skills/${skill.id}/versions/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+    setZipUploading(false)
+    if (!res.success) { flash(setZipMsg, 'err', getErrorMessage(res)); return }
+    flash(setZipMsg, 'ok', `✓ ZIP 包已上传，版本 v${zipVersion}`)
+    setZipFile(null)
+    setZipVersion('')
+    setZipChangelog('')
+    const updated = await apiRequest<Version[]>(`/skills/${skill.id}/versions`)
+    if (updated.success && updated.data) setVersions(updated.data)
   }
 
   const onDelete = async () => {
@@ -305,6 +332,58 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
                   )}
                 </div>
               </form>
+            </CardContent>
+          </Card>
+
+          {/* ZIP 上传 */}
+          <Card className="border-border/60 bg-background/95 shadow-sm mt-4">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <FolderArchive className="w-4 h-4" />上传技能包（ZIP）
+              </CardTitle>
+              <CardDescription>将技能文件夹打包为 ZIP 上传，支持多文件结构。ZIP 内的 SKILL.md 将作为主内容。</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-2">
+                    <Label>版本号 <span className="text-destructive">*</span></Label>
+                    <Input placeholder="如 1.0.0" value={zipVersion} onChange={e => setZipVersion(e.target.value)} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>更新说明</Label>
+                    <Input placeholder="可选" value={zipChangelog} onChange={e => setZipChangelog(e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label>ZIP 文件 <span className="text-destructive">*</span></Label>
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => document.getElementById('zip-upload')?.click()}
+                  >
+                    {zipFile ? (
+                      <div className="flex items-center justify-center gap-2 text-sm">
+                        <FolderArchive className="w-4 h-4 text-primary" />
+                        <span className="font-medium">{zipFile.name}</span>
+                        <span className="text-muted-foreground">({(zipFile.size / 1024).toFixed(1)} KB)</span>
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground">
+                        <Upload className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                        <p className="text-sm">点击选择 ZIP 文件</p>
+                        <p className="text-xs mt-1">最大 20MB</p>
+                      </div>
+                    )}
+                  </div>
+                  <input id="zip-upload" type="file" accept=".zip" className="hidden" onChange={e => setZipFile(e.target.files?.[0] ?? null)} />
+                </div>
+                <MsgBox msg={zipMsg} />
+                <Button onClick={onUploadZip} disabled={zipUploading || !zipFile || !zipVersion}>
+                  {zipUploading
+                    ? <><Upload className="w-3.5 h-3.5 mr-1.5 animate-pulse" />上传中...</>
+                    : <><Upload className="w-3.5 h-3.5 mr-1.5" />上传 ZIP 包</>}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
