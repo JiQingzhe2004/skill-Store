@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'motion/react'
 import { User, Download, Star, ThumbsUp } from 'lucide-react'
 import { Badge } from './ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card'
@@ -18,13 +17,8 @@ const ease = [0.25, 0.1, 0.25, 1] as const
 export function SkillsGridAnimated({ items, locale }: { items: PublicSkill[]; locale: string }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-      {items.map((skill, index) => (
-        <motion.div
-          key={skill.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease, delay: index * 0.05 }}
-        >
+      {items.map((skill) => (
+        <div key={skill.id}>
           <Link href={`/${locale}/skills/${skill.slug}`}>
             <Card className="h-full border-border/60 bg-card transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-border cursor-pointer">
               <CardHeader className="pb-3">
@@ -55,7 +49,7 @@ export function SkillsGridAnimated({ items, locale }: { items: PublicSkill[]; lo
               </CardContent>
             </Card>
           </Link>
-        </motion.div>
+        </div>
       ))}
     </div>
   )

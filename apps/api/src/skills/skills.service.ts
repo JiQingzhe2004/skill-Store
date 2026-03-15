@@ -464,7 +464,15 @@ export class SkillsService {
     if (skill.status !== SkillStatus.PUBLISHED || skill.visibility === SkillVisibility.PRIVATE) {
       throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
     }
-    return skill
+    const latestPublished = await this.prisma.skillVersion.findFirst({
+      where: { skillId: skill.id, publishedAt: { not: null } },
+      orderBy: { publishedAt: 'desc' },
+      select: { content: true },
+    })
+    return {
+      ...skill,
+      latestContent: latestPublished?.content ?? '',
+    }
   }
 
   /* ─── 公开技能列表 ─── */

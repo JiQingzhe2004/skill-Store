@@ -302,8 +302,29 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
     const name = f.path.split('/').pop()?.toLowerCase() ?? ''
     return name === 'skill.md' || name === 'readme.md'
   })
-  const [selectedFile, setSelectedFile] = useState<FileEntry | null>(readme ?? files[0] ?? null)
-  const [openDirs, setOpenDirs] = useState<Set<string>>(new Set())
+  
+  // 确保始终有选中的文件
+  const defaultFile = readme ?? files[0] ?? null
+  const [selectedFile, setSelectedFile] = useState<FileEntry | null>(defaultFile)
+  
+  // 如果只有一个文件，自动展开所有父目录
+  const [openDirs, setOpenDirs] = useState<Set<string>>(() => {
+    const dirs = new Set<string>()
+    if (files.length === 1 && files[0]) {
+      const parts = files[0].path.split('/')
+      for (let i = 0; i < parts.length - 1; i++) {
+        dirs.add(parts.slice(0, i + 1).join('/'))
+      }
+    }
+    return dirs
+  })
+
+  // 确保 selectedFile 始终有效
+  useEffect(() => {
+    if (!selectedFile && files.length > 0) {
+      setSelectedFile(defaultFile)
+    }
+  }, [files, selectedFile, defaultFile])
 
   if (!files.length) return null
 

@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useTransition } from 'react'
 import { Languages } from 'lucide-react'
-import { motion } from 'motion/react'
 import { Button } from './ui/button'
 import {
   DropdownMenu,
@@ -52,25 +51,19 @@ export function LanguageSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[120px]">
-        {LOCALES.map((locale, index) => (
-          <motion.div
+        {LOCALES.map((locale) => (
+          <DropdownMenuItem
             key={locale.code}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1], delay: index * 0.05 }}
+            onClick={() => switchLocale(locale.code)}
+            className={`cursor-pointer text-sm ${
+              currentLocale === locale.code ? 'font-medium text-foreground' : 'text-muted-foreground'
+            }`}
           >
-            <DropdownMenuItem
-              onClick={() => switchLocale(locale.code)}
-              className={`cursor-pointer text-sm ${
-                currentLocale === locale.code ? 'font-medium text-foreground' : 'text-muted-foreground'
-              }`}
-            >
-              {locale.label}
-              {currentLocale === locale.code && (
-                <span className="ml-auto text-xs text-primary">●</span>
-              )}
-            </DropdownMenuItem>
-          </motion.div>
+            {locale.label}
+            {currentLocale === locale.code && (
+              <span className="ml-auto text-xs text-primary">●</span>
+            )}
+          </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

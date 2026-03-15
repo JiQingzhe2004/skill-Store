@@ -18,6 +18,7 @@ type SkillDetail = {
   createdAt: string; updatedAt: string
   downloadCount: number; starCount: number; likeCount: number
   author: { username: string; avatar?: string | null }
+  latestContent?: string
   versions: {
     id: string; version: string; content?: string
     changelog: string | null; publishedAt: string | null; createdAt: string
@@ -101,6 +102,13 @@ export default async function SkillDetailPage({ params }: Props) {
               isLoggedIn={!!user}
             />
           </div>
+
+          {/* 如果没有文件，但后端提供了最新版本正文，就直接展示一块内容区 */}
+          {skillFiles.length === 0 && skill.latestContent && (
+            <article className="mt-4 rounded-lg border border-border/60 bg-card px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words">
+              {skill.latestContent}
+            </article>
+          )}
 
           {skillFiles.length > 0 && (
             <SkillFileViewer files={skillFiles} />

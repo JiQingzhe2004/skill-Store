@@ -40,7 +40,11 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} font-sans min-h-screen bg-background text-foreground antialiased`}>{children}<Toaster richColors position="top-right" /></body>
+      <body className={`${inter.variable} font-sans min-h-screen bg-background text-foreground antialiased`}>
+        {children}
+        <Toaster richColors position="top-right" />
+      </body>
     </html>
   )
 }
+

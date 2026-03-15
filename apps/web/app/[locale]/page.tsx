@@ -4,6 +4,7 @@ import { Boxes, Download, Share2, Sparkles, LayoutDashboard, Store, ArrowRight }
 import { Button } from '../../components/ui/button'
 import { SiteNav } from '../../components/site-nav'
 import { HeroAnimated, FeaturesAnimated } from '../../components/home-animations'
+import { HeroBackground } from '../../components/hero-background'
 import { fetchCurrentUser } from '../../lib/server-auth'
 import { getMessages, type Locale } from '../../messages'
 import type { AuthView } from '../../components/auth-dialog'
@@ -34,13 +35,11 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
     <div className="min-h-screen flex flex-col">
       <SiteNav user={user} initialAuthView={user ? null : authView} initialAuthEmail={authEmail} />
 
-      <main className="flex-1 pt-16">
-        {/* Hero */}
-        <section className="relative py-32 px-6 text-center overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 flex items-start justify-center">
-            <div className="w-[600px] h-[400px] rounded-full bg-primary/5 blur-3xl -translate-y-1/2" />
-          </div>
+      <main className="relative flex-1 pt-16 overflow-hidden">
+        <HeroBackground />
 
+        {/* Hero */}
+        <section className="relative z-10 py-32 px-6 text-center">
           <HeroAnimated>
             <div className="relative max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border/60 bg-muted/50 text-xs text-muted-foreground mb-8 backdrop-blur-sm">
@@ -84,7 +83,7 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
         </section>
 
         {/* Features */}
-        <section className="py-20 px-6 max-w-5xl mx-auto">
+        <section className="relative z-10 py-20 px-6 max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight mb-3">{m.featureTitle}</h2>
             <p className="text-muted-foreground text-sm">{m.featureSubtitle}</p>

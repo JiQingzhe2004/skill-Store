@@ -1,11 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { motion } from 'motion/react'
 import { Boxes, Home, ArrowLeft } from 'lucide-react'
 import { Button } from '../components/ui/button'
-
-const ease = [0.25, 0.1, 0.25, 1] as const
 
 export default function NotFound() {
   return (
@@ -25,43 +22,22 @@ export default function NotFound() {
 
       {/* Main */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
-        {/* 404 number */}
-        <motion.div
-          className="mb-8"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease }}
-        >
+        <div className="mb-8">
           <span className="text-[10rem] font-black leading-none tracking-tighter text-muted-foreground/10 select-none">
             404
           </span>
-        </motion.div>
+        </div>
 
-        <motion.h1
-          className="text-2xl font-bold tracking-tight mb-3"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease, delay: 0.15 }}
-        >
+        <h1 className="text-2xl font-bold tracking-tight mb-3">
           Page not found
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          className="text-muted-foreground text-sm max-w-sm leading-relaxed mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease, delay: 0.2 }}
-        >
+        <p className="text-muted-foreground text-sm max-w-sm leading-relaxed mb-8">
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
           Let&apos;s get you back on track.
-        </motion.p>
+        </p>
 
-        <motion.div
-          className="flex items-center gap-3"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, ease, delay: 0.3 }}
-        >
+        <div className="flex items-center gap-3">
           <Button asChild variant="default">
             <Link href="/">
               <Home className="w-4 h-4 mr-2" />
@@ -74,7 +50,7 @@ export default function NotFound() {
               Browse skills
             </Link>
           </Button>
-        </motion.div>
+        </div>
 
         {/* Decorative dots */}
         <div className="mt-16 flex items-center gap-2 opacity-30">
@@ -95,3 +71,4 @@ export default function NotFound() {
     </div>
   )
 }
+
