@@ -388,4 +388,10 @@ export const enUS = {
     file: 'Files',
     lineCount: '{lines} lines · {size}',
   },
+  notFound: {
+    title: 'Page not found',
+    description: 'The page you\'re looking for doesn\'t exist or has been moved. Let\'s get you back on track.',
+    goHome: 'Go home',
+    browseSkills: 'Browse skills',
+  },
 } as const

@@ -388,4 +388,10 @@ export const zhCN = {
     file: '文件',
     lineCount: '{lines} 行 · {size}',
   },
+  notFound: {
+    title: '页面不存在',
+    description: '你访问的页面不存在或已被移动，让我们回到正轨。',
+    goHome: '回到首页',
+    browseSkills: '浏览技能',
+  },
 } as const
