@@ -62,11 +62,13 @@ function SyntaxHighlighterThemed({ language, content }: { language: string; cont
           ...(dark ? oneDark : oneLight)['code[class*="language-"]'],
           background: 'transparent',
           backgroundColor: 'transparent',
+          textShadow: 'none',
         },
       }}
       showLineNumbers
       lineNumberStyle={{ color: dark ? '#636d83' : '#999', fontSize: '0.75rem', userSelect: 'none', minWidth: '3em' }}
-      customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8rem', background: 'transparent', backgroundColor: 'transparent' }}
+      customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8rem', background: 'transparent', backgroundColor: 'transparent', textShadow: 'none' }}
+      codeTagProps={{ style: { textShadow: 'none' } }}
     >
       {content}
     </SyntaxHighlighter>
