@@ -305,18 +305,6 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/60 bg-muted/30">
         <span className="text-sm font-medium text-muted-foreground">{files.length} 个文件</span>
-        {selectedFile && isMarkdown && (
-          <div className="flex items-center rounded border border-border/60 overflow-hidden">
-            <button title="渲染预览" onClick={() => setViewRaw(false)}
-              className={cn('px-2 py-1 transition-colors', !viewRaw ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
-              <BookOpen className="w-3.5 h-3.5" />
-            </button>
-            <button title="查看源码" onClick={() => setViewRaw(true)}
-              className={cn('px-2 py-1 transition-colors', viewRaw ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
-              <Code className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
         {selectedFile && (
           <span className="text-xs text-muted-foreground font-mono">{selectedFile.path}</span>
         )}
@@ -334,7 +322,19 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
         </div>
 
         {/* Right: content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto relative">
+          {selectedFile && isMarkdown && (
+            <div className="absolute top-2 right-2 z-10 flex items-center rounded border border-border/60 overflow-hidden shadow-sm">
+              <button title="渲染预览" onClick={() => setViewRaw(false)}
+                className={cn('px-2 py-1 transition-colors', !viewRaw ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}>
+                <BookOpen className="w-3.5 h-3.5" />
+              </button>
+              <button title="查看源码" onClick={() => setViewRaw(true)}
+                className={cn('px-2 py-1 transition-colors', viewRaw ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}>
+                <Code className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
           {selectedFile ? (
             isMarkdown && !viewRaw ? (
               <div className="p-6 prose prose-sm dark:prose-invert max-w-none">
