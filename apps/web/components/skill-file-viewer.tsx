@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronRight, File, Folder, FolderOpen, ArrowLeft, FileText } from 'lucide-react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from '../lib/utils'
@@ -29,6 +29,36 @@ const EXT_LANG: Record<string, string> = {
   sql: 'sql', graphql: 'graphql', prisma: 'javascript',
   md: 'markdown', txt: 'text', env: 'bash',
   dockerfile: 'docker',
+}
+
+// ─── 主题感知代码高亮 ───────────────────────────────────────────────────────────
+function SyntaxHighlighterThemed({ language, content }: { language: string; content: string }) {
+  const [dark, setDark] = useState(false)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    // 也检查 class-based dark mode（Tailwind）
+    const checkDark = () => {
+      setDark(document.documentElement.classList.contains('dark') || mq.matches)
+    }
+    checkDark()
+    const observer = new MutationObserver(checkDark)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    mq.addEventListener('change', checkDark)
+    return () => { observer.disconnect(); mq.removeEventListener('change', checkDark) }
+  }, [])
+
+  return (
+    <SyntaxHighlighter
+      language={language}
+      style={dark ? oneDark : oneLight}
+      showLineNumbers
+      lineNumberStyle={{ color: dark ? '#636d83' : '#999', fontSize: '0.75rem', userSelect: 'none', minWidth: '3em' }}
+      customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8rem', background: 'transparent' }}
+    >
+      {content}
+    </SyntaxHighlighter>
+  )
 }
 
 function getLang(path: string): string {
@@ -176,15 +206,7 @@ function FileCodeView({ file, onBack }: { file: FileEntry; onBack: () => void })
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <SyntaxHighlighter
-            language={lang === 'markdown' ? 'markdown' : lang}
-            style={oneLight}
-            showLineNumbers
-            lineNumberStyle={{ color: '#999', fontSize: '0.75rem', userSelect: 'none', minWidth: '3em' }}
-            customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8rem', background: '#fafafa' }}
-          >
-            {file.content}
-          </SyntaxHighlighter>
+          <SyntaxHighlighterThemed language={lang} content={file.content} />
         </div>
       )}
     </div>
