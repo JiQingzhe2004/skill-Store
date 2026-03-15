@@ -275,6 +275,17 @@ export class SkillsService {
   }
 
   /* ─── 公开技能详情（by slug） ─── */
+  /* ─── 增加下载计数 ─── */
+  async incrementDownloadCount(slug: string) {
+    const skill = await this.prisma.skill.findUnique({ where: { slug } })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+    await this.prisma.skill.update({
+      where: { id: skill.id },
+      data: { downloadCount: { increment: 1 } },
+    })
+    return { success: true }
+  }
+
   /* ─── 构建下载 ZIP ─── */
   async buildDownloadZip(slug: string) {
     const skill = await this.prisma.skill.findUnique({
@@ -292,12 +303,6 @@ export class SkillsService {
     if (!skill.versions.length) throw new AppException(HttpStatus.BAD_REQUEST, 'NO_PUBLISHED_VERSION', '该技能暂无已发布版本')
 
     const version = skill.versions[0]
-
-    // 更新下载计数
-    await this.prisma.skill.update({
-      where: { id: skill.id },
-      data: { downloadCount: { increment: 1 } },
-    })
 
     const archiver = await import('archiver')
     const archive = archiver.default('zip', { zlib: { level: 9 } })

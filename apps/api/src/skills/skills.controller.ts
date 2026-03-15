@@ -59,6 +59,11 @@ export class SkillsController {
     return this.skillsService.getPublicFiles(slug)
   }
 
+  @Post('public/:slug/download/count')
+  incrementDownload(@Param('slug') slug: string) {
+    return this.skillsService.incrementDownloadCount(slug)
+  }
+
   @Get('public/:slug/download')
   @UseInterceptors()
   async download(

@@ -70,14 +70,16 @@ export function SkillActions({
     if (installLoading) return
     setInstallLoading(true); setInstallMsg(''); setErrMsg('')
     try {
-      // 触发浏览器下载
+      // 先记录下载计数（只调用一次）
+      await apiRequest(`/skills/public/${slug}/download/count`, { method: 'POST' })
+      setDownloadCount(prev => prev + 1)
+      // 再触发浏览器下载
       const a = document.createElement('a')
       a.href = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/skills/public/${slug}/download`
       a.download = ''
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      setDownloadCount(prev => prev + 1)
       setInstallMsg('✓ 开始下载')
       setTimeout(() => setInstallMsg(''), 3000)
     } catch {
