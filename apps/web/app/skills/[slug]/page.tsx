@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { fetchCurrentUser } from '../../../lib/server-auth'
 import { serverApiRequest } from '../../../lib/server-api'
 import { SkillActions } from './skill-actions'
+import { RichTextContent } from '../../../components/rich-text-editor'
 
 type SkillDetail = {
   id: string
@@ -28,6 +29,7 @@ type SkillDetail = {
   versions: {
     id: string
     version: string
+    content?: string
     changelog: string | null
     publishedAt: string | null
     createdAt: string
@@ -123,6 +125,18 @@ export default async function SkillDetailPage({ params }: Props) {
               </CardContent>
             )}
           </Card>
+
+          {/* Content */}
+          {skill.versions[0]?.content && (
+            <Card className="border-border/60 bg-background/95 shadow-sm mb-6">
+              <CardHeader>
+                <CardTitle className="text-base">技能内容</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RichTextContent html={skill.versions[0].content} />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Version History */}
           {skill.versions.length > 0 && (

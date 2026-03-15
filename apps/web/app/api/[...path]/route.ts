@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3001'
 
-type RouteContext = {
-  params: Promise<{
-    path: string[]
-  }>
-}
+
 
 export const dynamic = 'force-dynamic'
 
-async function proxyRequest(request: NextRequest, context: RouteContext) {
+async function proxyRequest(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const params = await context.params
   const upstreamUrl = new URL(`/api/${params.path.join('/')}`, API_BASE_URL)
   upstreamUrl.search = request.nextUrl.search
@@ -58,22 +54,22 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
   return response
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   return proxyRequest(request, context)
 }
 
-export async function POST(request: NextRequest, context: RouteContext) {
+export async function POST(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   return proxyRequest(request, context)
 }
 
-export async function PUT(request: NextRequest, context: RouteContext) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   return proxyRequest(request, context)
 }
 
-export async function PATCH(request: NextRequest, context: RouteContext) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   return proxyRequest(request, context)
 }
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   return proxyRequest(request, context)
 }

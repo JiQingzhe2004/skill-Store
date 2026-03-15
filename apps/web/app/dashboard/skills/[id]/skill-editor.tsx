@@ -12,6 +12,7 @@ import { Button } from '../../../../components/ui/button'
 import { Input } from '../../../../components/ui/input'
 import { Label } from '../../../../components/ui/label'
 import { Textarea } from '../../../../components/ui/textarea'
+import { RichTextEditor } from '../../../../components/rich-text-editor'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../../components/ui/select'
 import { Alert, AlertDescription } from '../../../../components/ui/alert'
 import { Badge } from '../../../../components/ui/badge'
@@ -109,15 +110,7 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
     },
   })
 
-  const defaultContent = latestContent || `---
-name: ${skill.slug}
-description: ${skill.description}
----
-
-# ${skill.name}
-
-在这里编写技能的详细内容...
-`
+  const defaultContent = latestContent || `<h1>${skill.name}</h1><p>在这里编写技能的详细内容...</p>`
 
   /* ── 技能内容 Form ── */
   const contentForm = useForm<ContentValues>({
@@ -267,11 +260,11 @@ description: ${skill.description}
             <CardContent>
               <form className="grid gap-4" onSubmit={onSaveContent}>
                 <div className="grid gap-2">
-                  <Textarea
-                    rows={20}
-                    placeholder={"---\nname: my-skill\ndescription: 一句话描述\n---\n\n# 技能名称\n\n技能的详细说明..."}
-                    className="font-mono text-xs leading-relaxed"
-                    {...contentForm.register('content')}
+                  <RichTextEditor
+                    value={contentForm.watch('content')}
+                    onChange={(html) => contentForm.setValue('content', html, { shouldValidate: true })}
+                    placeholder="在这里编写技能的详细内容..."
+                    minHeight={480}
                   />
                   {contentForm.formState.errors.content && (
                     <p className="text-xs text-destructive">{contentForm.formState.errors.content.message}</p>
