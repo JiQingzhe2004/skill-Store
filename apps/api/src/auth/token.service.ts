@@ -16,14 +16,14 @@ export class TokenService {
   signAccessToken(user: Pick<User, 'id' | 'email' | 'role'>) {
     return this.jwtService.signAsync(this.createPayload(user, 'access'), {
       secret: this.configService.getOrThrow<string>('jwtAccessSecret'),
-      expiresIn: '15m',
+      expiresIn: '365d', // 1 年
     })
   }
 
   signRefreshToken(user: Pick<User, 'id' | 'email' | 'role'>) {
     return this.jwtService.signAsync(this.createPayload(user, 'refresh'), {
       secret: this.configService.getOrThrow<string>('jwtRefreshSecret'),
-      expiresIn: '30d',
+      expiresIn: '365d', // 1 年
     })
   }
 

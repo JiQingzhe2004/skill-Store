@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
+import { useTransition } from 'react'
 import { Languages } from 'lucide-react'
 import { Button } from './ui/button'
 import {
@@ -18,6 +19,7 @@ const LOCALES = [
 export function LanguageSwitcher() {
   const pathname = usePathname()
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   // Extract current locale from pathname (e.g., /zh-CN/dashboard → zh-CN)
   const segments = pathname.split('/')
@@ -35,14 +37,15 @@ export function LanguageSwitcher() {
     // Set cookie
     document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=${365 * 24 * 60 * 60};samesite=lax`
 
-    router.push(newPath)
-    router.refresh()
+    startTransition(() => {
+      router.push(newPath)
+    })
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground" disabled={isPending}>
           <Languages className="w-4 h-4" />
           <span className="text-xs">{currentLabel}</span>
         </Button>
