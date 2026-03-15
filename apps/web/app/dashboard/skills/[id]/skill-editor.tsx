@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
-import { ArrowLeft, Save, Send, Trash2, CheckCircle2, Clock, FileText, Code2, History } from 'lucide-react'
+import { ArrowLeft, Save, Send, Trash2, CheckCircle2, Clock, FileText, Code2, History, Info } from 'lucide-react'
 
 import { Button } from '../../../../components/ui/button'
 import { Input } from '../../../../components/ui/input'
@@ -110,7 +110,16 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
     },
   })
 
-  const defaultContent = latestContent || `<h1>${skill.name}</h1><p>在这里编写技能的详细内容...</p>`
+  const tagsArray = skill.tags ? skill.tags.split(',').map(t => t.trim()).filter(Boolean) : []
+  const defaultContent = latestContent || [
+    `<h1>${skill.name}</h1>`,
+    `<p>${skill.description}</p>`,
+    tagsArray.length ? `<p><strong>标签：</strong>${tagsArray.join('、')}</p>` : '',
+    `<h2>功能介绍</h2><p>请在这里详细描述技能的功能和用途...</p>`,
+    `<h2>使用方法</h2><p>请在这里描述如何使用该技能...</p>`,
+    `<h2>示例</h2><p>请在这里提供使用示例...</p>`,
+    `<h2>注意事项</h2><p>请在这里列出使用时需要注意的事项...</p>`,
+  ].filter(Boolean).join('')
 
   /* ── 技能内容 Form ── */
   const contentForm = useForm<ContentValues>({
@@ -188,15 +197,19 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
       </div>
 
       <Tabs defaultValue="content">
-        <TabsList>
-          <TabsTrigger value="info">基本信息</TabsTrigger>
-          <TabsTrigger value="content">
-            <Code2 className="w-3.5 h-3.5 mr-1.5" />技能内容
-          </TabsTrigger>
-          <TabsTrigger value="versions">
-            <History className="w-3.5 h-3.5 mr-1.5" />版本历史 {versions.length > 0 && `(${versions.length})`}
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex justify-center mb-4">
+          <TabsList className="h-10">
+            <TabsTrigger value="info" className="gap-1.5">
+              <Info className="w-3.5 h-3.5" />基本信息
+            </TabsTrigger>
+            <TabsTrigger value="content" className="gap-1.5">
+              <Code2 className="w-3.5 h-3.5" />技能内容
+            </TabsTrigger>
+            <TabsTrigger value="versions" className="gap-1.5">
+              <History className="w-3.5 h-3.5" />版本历史{versions.length > 0 && ` (${versions.length})`}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── Tab 1：基本信息 ── */}
         <TabsContent value="info">
@@ -245,6 +258,14 @@ export function SkillEditor({ skill, versions: initVersions, latestContent }: {
 
         {/* ── Tab 2：技能内容 ── */}
         <TabsContent value="content">
+          {!latestContent && (
+            <Alert className="mb-4 border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                已根据基本信息预填内容模板（名称、描述、标签），请在此基础上完善技能文档。
+              </AlertDescription>
+            </Alert>
+          )}
           <Card className="border-border/60 bg-background/95">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
