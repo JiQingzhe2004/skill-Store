@@ -57,8 +57,7 @@ services:
       - ./apps/api/src:/app/apps/api/src
       - ./apps/api/prisma:/app/apps/api/prisma
       - ./packages/shared:/app/packages/shared
-      # anonymous volume to protect container's node_modules
-      - /app/node_modules
+      # only protect app-level node_modules
       - /app/apps/api/node_modules
 
   web:
@@ -79,11 +78,13 @@ services:
     networks:
       - skill-store-network
     volumes:
-      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/app:/app/apps/web/app
+      - ./apps/web/components:/app/apps/web/components
+      - ./apps/web/lib:/app/apps/web/lib
+      - ./apps/web/messages:/app/apps/web/messages
       - ./apps/web/public:/app/apps/web/public
       - ./packages/shared:/app/packages/shared
-      # anonymous volume to protect container's node_modules
-      - /app/node_modules
+      # only protect app-level node_modules, not root (root has tiptap etc)
       - /app/apps/web/node_modules
       - /app/apps/web/.next
 

@@ -21,4 +21,4 @@ RUN cd apps/api && DATABASE_URL=mysql://placeholder:placeholder@localhost:3306/p
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "cd apps/api && npx prisma migrate dev --schema=prisma/schema.prisma --skip-seed && cd /app && pnpm --filter @skill-store/api dev"]
+CMD ["sh", "-c", "pnpm install --frozen-lockfile && cd apps/api && npx prisma migrate dev --schema=prisma/schema.prisma --skip-seed && cd /app && pnpm --filter @skill-store/api dev"]
