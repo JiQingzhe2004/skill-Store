@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react'
 import { User, MessageSquare, Trash2, Reply, Send } from 'lucide-react'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog'
 import { apiRequest, getErrorMessage } from '../lib/api'
 import { cn } from '../lib/utils'
 
@@ -54,11 +65,11 @@ function CommentItem({
   const [error, setError] = useState('')
 
   const canDelete = isAdmin || currentUserId === comment.user.id
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
   const handleDelete = async () => {
-    if (!confirm('确定删除这条评论？')) return
     const res = await apiRequest(`/skills/public/comments/${comment.id}`, { method: 'DELETE' })
-    if (res.success) onDeleted(comment.id)
+    if (res.success) { setDeleteOpen(false); onDeleted(comment.id) }
   }
 
   const handleReply = async () => {
@@ -98,12 +109,23 @@ function CommentItem({
             </button>
           )}
           {canDelete && (
-            <button
-              onClick={handleDelete}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
-            >
-              <Trash2 className="w-3 h-3" />删除
-            </button>
+            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+              <AlertDialogTrigger asChild>
+                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 className="w-3 h-3" />删除
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>删除评论</AlertDialogTitle>
+                  <AlertDialogDescription>确定要删除这条评论吗？此操作不可撤销。</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">删除</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
         {showReply && (
