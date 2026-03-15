@@ -8,9 +8,8 @@ on:
     paths:
       - 'apps/**'
       - 'packages/**'
-      - 'apps/api/Dockerfile'
-      - 'apps/web/Dockerfile'
       - 'pnpm-lock.yaml'
+      - '.github/workflows/docker-publish.yml'
   workflow_dispatch:  # 支持手动触发
 
 env:
