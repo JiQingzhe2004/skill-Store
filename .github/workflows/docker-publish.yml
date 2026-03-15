@@ -65,7 +65,7 @@ jobs:
           push: true
           tags: ${{ steps.meta-api.outputs.tags }}
           labels: ${{ steps.meta-api.outputs.labels }}
-          no-cache: true
+          cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Build & Push Web
@@ -76,5 +76,5 @@ jobs:
           push: true
           tags: ${{ steps.meta-web.outputs.tags }}
           labels: ${{ steps.meta-web.outputs.labels }}
-          no-cache: true
+          cache-from: type=gha
           cache-to: type=gha,mode=max
