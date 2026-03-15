@@ -60,16 +60,28 @@ export class SkillsController {
   }
 
   @Get('public/:slug/download')
+  @UseInterceptors()
   async download(
     @Param('slug') slug: string,
-    @Res() res: import('express').Response,
+    @Res({ passthrough: false }) res: import('express').Response,
   ) {
-    const { stream, filename } = await this.skillsService.buildDownloadZip(slug)
-    res.set({
-      'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    })
-    stream.pipe(res)
+    try {
+      const { stream, filename } = await this.skillsService.buildDownloadZip(slug)
+      const encoded = encodeURIComponent(filename)
+      res.set({
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename*=UTF-8''${encoded}`,
+      })
+      stream.on('error', (err) => {
+        if (!res.headersSent) {
+          res.status(500).json({ success: false, error: { code: 'ZIP_ERROR', message: err.message } })
+        }
+      })
+      stream.pipe(res)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '下载失败'
+      res.status(500).json({ success: false, error: { code: 'DOWNLOAD_ERROR', message: msg } })
+    }
   }
 
   @UseGuards(AccessTokenGuard)
