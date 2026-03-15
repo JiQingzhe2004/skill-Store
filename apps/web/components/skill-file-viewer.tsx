@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronRight, File, Folder, FolderOpen } from 'lucide-react'
+import { ChevronRight, File, Folder, FolderOpen, ArrowLeft, FileText } from 'lucide-react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from '../lib/utils'
+import { Button } from './ui/button'
 
 type FileEntry = {
   id: string
@@ -37,165 +38,227 @@ function getLang(path: string): string {
   return EXT_LANG[ext] ?? 'text'
 }
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
 // ─── 文件树构建 ───────────────────────────────────────────────────────────────
 type TreeNode = {
   name: string
-  path: string
+  fullPath: string
   type: 'file' | 'dir'
-  children: TreeNode[]
+  children: Map<string, TreeNode>
   file?: FileEntry
 }
 
-function buildTree(files: FileEntry[]): TreeNode[] {
-  const root: TreeNode[] = []
+function buildTree(files: FileEntry[]): Map<string, TreeNode> {
+  const root = new Map<string, TreeNode>()
 
   for (const file of files) {
     const parts = file.path.split('/')
-    let nodes = root
+    let current = root
 
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i]
       const isLast = i === parts.length - 1
-      let node = nodes.find(n => n.name === part)
+      const fullPath = parts.slice(0, i + 1).join('/')
 
-      if (!node) {
-        node = {
+      if (!current.has(part)) {
+        current.set(part, {
           name: part,
-          path: parts.slice(0, i + 1).join('/'),
+          fullPath,
           type: isLast ? 'file' : 'dir',
-          children: [],
+          children: new Map(),
           file: isLast ? file : undefined,
-        }
-        nodes.push(node)
-        // dirs before files, alpha sort
-        nodes.sort((a, b) => {
-          if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
-          return a.name.localeCompare(b.name)
         })
       }
-
-      nodes = node.children
+      if (!isLast) {
+        current = current.get(part)!.children
+      }
     }
   }
 
   return root
 }
 
-// ─── 树节点组件 ───────────────────────────────────────────────────────────────
-function TreeItem({
-  node, depth, selected, onSelect,
-}: {
+// ─── 文件表格行 ──────────────────────────────────────────────────────────────
+function FileRow({ node, depth = 0, onFileClick, onDirClick, openDirs }: {
   node: TreeNode
-  depth: number
-  selected: string | null
-  onSelect: (f: FileEntry) => void
+  depth?: number
+  onFileClick: (file: FileEntry) => void
+  onDirClick: (path: string) => void
+  openDirs: Set<string>
 }) {
-  const [open, setOpen] = useState(depth === 0)
+  const isOpen = openDirs.has(node.fullPath)
   const isDir = node.type === 'dir'
-  const isSelected = selected === node.path
 
   return (
-    <div>
-      <button
-        className={cn(
-          'flex items-center gap-1.5 w-full text-left px-2 py-0.5 rounded text-sm hover:bg-muted/60 transition-colors',
-          isSelected && 'bg-muted font-medium',
-        )}
-        style={{ paddingLeft: `${8 + depth * 16}px` }}
-        onClick={() => {
-          if (isDir) setOpen(o => !o)
-          else if (node.file) onSelect(node.file)
-        }}
+    <>
+      <tr
+        className="hover:bg-muted/50 cursor-pointer border-b border-border/40 last:border-0"
+        onClick={() => isDir ? onDirClick(node.fullPath) : node.file && onFileClick(node.file)}
       >
-        {isDir ? (
-          <>
-            <ChevronRight className={cn('w-3.5 h-3.5 text-muted-foreground transition-transform', open && 'rotate-90')} />
-            {open
-              ? <FolderOpen className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
-              : <Folder className="w-3.5 h-3.5 text-yellow-500 shrink-0" />}
-          </>
-        ) : (
-          <>
-            <span className="w-3.5" />
-            <File className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          </>
-        )}
-        <span className="truncate">{node.name}</span>
-      </button>
-      {isDir && open && node.children.map(child => (
-        <TreeItem key={child.path} node={child} depth={depth + 1} selected={selected} onSelect={onSelect} />
+        <td className="py-1.5 px-4">
+          <div className="flex items-center gap-2" style={{ paddingLeft: `${depth * 16}px` }}>
+            {isDir ? (
+              isOpen
+                ? <FolderOpen className="w-4 h-4 text-yellow-500 shrink-0" />
+                : <Folder className="w-4 h-4 text-yellow-500 shrink-0" />
+            ) : (
+              <File className="w-4 h-4 text-muted-foreground shrink-0" />
+            )}
+            <span className={cn('text-sm', isDir ? 'font-medium' : 'text-foreground')}>
+              {node.name}
+            </span>
+          </div>
+        </td>
+        <td className="py-1.5 px-4 text-right text-xs text-muted-foreground">
+          {!isDir && node.file ? formatSize(node.file.size) : ''}
+        </td>
+      </tr>
+      {isDir && isOpen && Array.from(node.children.values()).sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
+        return a.name.localeCompare(b.name)
+      }).map(child => (
+        <FileRow
+          key={child.fullPath}
+          node={child}
+          depth={depth + 1}
+          onFileClick={onFileClick}
+          onDirClick={onDirClick}
+          openDirs={openDirs}
+        />
       ))}
-    </div>
+    </>
   )
 }
 
-// ─── 文件内容渲染 ─────────────────────────────────────────────────────────────
-function FileContent({ file }: { file: FileEntry }) {
+// ─── 代码查看器 ───────────────────────────────────────────────────────────────
+function FileCodeView({ file, onBack }: { file: FileEntry; onBack: () => void }) {
   const lang = getLang(file.path)
-  const content = file.encoding === 'base64'
-    ? '[二进制文件，无法预览]'
-    : file.content
-
-  if (lang === 'markdown') {
-    return (
-      <div className="prose prose-sm max-w-none p-6 dark:prose-invert">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-      </div>
-    )
-  }
+  const isMarkdown = lang === 'markdown'
+  const [viewRaw, setViewRaw] = useState(false)
+  const lines = file.content.split('\n').length
 
   return (
-    <SyntaxHighlighter
-      language={lang}
-      style={oneLight}
-      customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8rem', minHeight: '100%', background: 'transparent' }}
-      showLineNumbers
-      wrapLines
-    >
-      {content}
-    </SyntaxHighlighter>
+    <div className="rounded-lg border border-border/60 overflow-hidden">
+      {/* Breadcrumb header */}
+      <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-muted/40 border-b border-border/60">
+        <div className="flex items-center gap-1.5 text-sm">
+          <button
+            onClick={onBack}
+            className="text-primary hover:underline font-medium"
+          >
+            文件
+          </button>
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="font-medium">{file.path.split('/').pop()}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{lines} 行 · {formatSize(file.size)}</span>
+          {isMarkdown && (
+            <button
+              onClick={() => setViewRaw(!viewRaw)}
+              className="text-xs text-primary hover:underline"
+            >
+              {viewRaw ? '渲染预览' : '查看源码'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      {isMarkdown && !viewRaw ? (
+        <div className="p-6 prose prose-sm dark:prose-invert max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{file.content}</ReactMarkdown>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <SyntaxHighlighter
+            language={lang === 'markdown' ? 'markdown' : lang}
+            style={oneLight}
+            showLineNumbers
+            lineNumberStyle={{ color: '#999', fontSize: '0.75rem', userSelect: 'none', minWidth: '3em' }}
+            customStyle={{ margin: 0, borderRadius: 0, fontSize: '0.8rem', background: '#fafafa' }}
+          >
+            {file.content}
+          </SyntaxHighlighter>
+        </div>
+      )}
+    </div>
   )
 }
 
 // ─── 主组件 ───────────────────────────────────────────────────────────────────
 export function SkillFileViewer({ files }: { files: FileEntry[] }) {
-  const tree = buildTree(files)
-  const firstFile = files.find(f => f.path === 'SKILL.md') ?? files[0] ?? null
-  const [selected, setSelected] = useState<FileEntry | null>(firstFile)
+  const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null)
+  const [openDirs, setOpenDirs] = useState<Set<string>>(new Set())
 
   if (!files.length) return null
 
+  const tree = buildTree(files)
+  const readme = files.find(f => {
+    const name = f.path.split('/').pop()?.toLowerCase() ?? ''
+    return name === 'skill.md' || name === 'readme.md'
+  })
+
+  const sortedNodes = Array.from(tree.values()).sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
+    return a.name.localeCompare(b.name)
+  })
+
+  const toggleDir = (path: string) => {
+    setOpenDirs(prev => {
+      const next = new Set(prev)
+      next.has(path) ? next.delete(path) : next.add(path)
+      return next
+    })
+  }
+
+  if (selectedFile) {
+    return (
+      <div className="mt-6">
+        <FileCodeView file={selectedFile} onBack={() => setSelectedFile(null)} />
+      </div>
+    )
+  }
+
   return (
-    <div className="flex border border-border/60 rounded-lg overflow-hidden" style={{ minHeight: 400 }}>
-      {/* 文件树 */}
-      <div className="w-56 shrink-0 border-r border-border/60 bg-muted/20 overflow-y-auto py-2">
-        <div className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">文件</div>
-        {tree.map(node => (
-          <TreeItem
-            key={node.path}
-            node={node}
-            depth={0}
-            selected={selected?.path ?? null}
-            onSelect={setSelected}
-          />
-        ))}
+    <div className="mt-6 grid gap-4">
+      {/* File table */}
+      <div className="rounded-lg border border-border/60 overflow-hidden">
+        <div className="px-4 py-2.5 bg-muted/40 border-b border-border/60 flex items-center justify-between">
+          <span className="text-sm font-medium">{files.length} 个文件</span>
+        </div>
+        <table className="w-full">
+          <tbody>
+            {sortedNodes.map(node => (
+              <FileRow
+                key={node.fullPath}
+                node={node}
+                onFileClick={setSelectedFile}
+                onDirClick={toggleDir}
+                openDirs={openDirs}
+              />
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* 文件内容 */}
-      <div className="flex-1 overflow-auto">
-        {selected ? (
-          <>
-            <div className="flex items-center gap-2 px-4 py-2 border-b border-border/60 bg-muted/10 text-xs text-muted-foreground">
-              <File className="w-3.5 h-3.5" />
-              <span className="font-mono">{selected.path}</span>
-              <span className="ml-auto">{(selected.size / 1024).toFixed(1)} KB</span>
-            </div>
-            <FileContent file={selected} />
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">选择文件查看内容</div>
-        )}
-      </div>
+      {/* README / SKILL.md preview */}
+      {readme && (
+        <div className="rounded-lg border border-border/60 overflow-hidden">
+          <div className="px-4 py-2.5 bg-muted/40 border-b border-border/60 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{readme.path.split('/').pop()}</span>
+          </div>
+          <div className="p-6 prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{readme.content}</ReactMarkdown>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
