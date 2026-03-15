@@ -275,6 +275,60 @@ export class SkillsService {
   }
 
   /* ─── 公开技能详情（by slug） ─── */
+  /* ─── 评论 ─── */
+  async createComment(slug: string, userId: string, content: string, parentId?: string) {
+    const skill = await this.prisma.skill.findUnique({ where: { slug } })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+
+    if (parentId) {
+      const parent = await this.prisma.skillComment.findUnique({ where: { id: parentId } })
+      if (!parent || parent.skillId !== skill.id) throw new AppException(HttpStatus.BAD_REQUEST, 'INVALID_PARENT', '回复的评论不存在')
+    }
+
+    return this.prisma.skillComment.create({
+      data: { skillId: skill.id, userId, content, parentId },
+      include: {
+        user: { select: { id: true, username: true, avatar: true } },
+        replies: {
+          include: { user: { select: { id: true, username: true, avatar: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    })
+  }
+
+  async getComments(slug: string, page = 1, pageSize = 20) {
+    const skill = await this.prisma.skill.findUnique({ where: { slug } })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+
+    const [total, items] = await Promise.all([
+      this.prisma.skillComment.count({ where: { skillId: skill.id, parentId: null } }),
+      this.prisma.skillComment.findMany({
+        where: { skillId: skill.id, parentId: null },
+        include: {
+          user: { select: { id: true, username: true, avatar: true } },
+          replies: {
+            include: { user: { select: { id: true, username: true, avatar: true } } },
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ])
+
+    return { total, page, pageSize, items }
+  }
+
+  async deleteComment(commentId: string, userId: string, isAdmin = false) {
+    const comment = await this.prisma.skillComment.findUnique({ where: { id: commentId } })
+    if (!comment) throw new AppException(HttpStatus.NOT_FOUND, 'COMMENT_NOT_FOUND', '评论不存在')
+    if (!isAdmin && comment.userId !== userId) throw new AppException(HttpStatus.FORBIDDEN, 'FORBIDDEN', '无权删除此评论')
+    await this.prisma.skillComment.delete({ where: { id: commentId } })
+    return { success: true }
+  }
+
   /* ─── 增加下载计数 ─── */
   async incrementDownloadCount(slug: string) {
     const skill = await this.prisma.skill.findUnique({ where: { slug } })

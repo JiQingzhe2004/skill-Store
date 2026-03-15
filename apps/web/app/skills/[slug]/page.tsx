@@ -9,6 +9,7 @@ import { fetchCurrentUser } from '../../../lib/server-auth'
 import { serverApiRequest } from '../../../lib/server-api'
 import { SkillActions } from './skill-actions'
 import { SkillFileViewer } from '../../../components/skill-file-viewer'
+import { SkillComments } from '../../../components/skill-comments'
 
 type SkillDetail = {
   id: string
@@ -122,6 +123,14 @@ export default async function SkillDetailPage({ params }: Props) {
           {skillFiles.length > 0 && (
             <SkillFileViewer files={skillFiles} />
           )}
+
+          {/* Comments */}
+          <SkillComments
+            slug={skill.slug}
+            isLoggedIn={!!user}
+            currentUserId={user?.id}
+            isAdmin={user?.role === 'ADMIN'}
+          />
         </section>
       </main>
 

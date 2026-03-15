@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UseGuards, UseInterceptors, UploadedFile, BadRequestException, ParseIntPipe } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { JwtUser } from '../common/types/jwt-user'
@@ -7,6 +7,7 @@ import { SkillsService } from './skills.service'
 import { CreateSkillDto } from './dto/create-skill.dto'
 import { UpdateSkillDto } from './dto/update-skill.dto'
 import { CreateVersionDto } from './dto/create-version.dto'
+import { CreateCommentDto } from './dto/create-comment.dto'
 import { ZipService } from './zip.service'
 
 @Controller('skills')
@@ -57,6 +58,34 @@ export class SkillsController {
   @Get('public/:slug/files')
   getPublicFiles(@Param('slug') slug: string) {
     return this.skillsService.getPublicFiles(slug)
+  }
+
+  @Get('public/:slug/comments')
+  getComments(
+    @Param('slug') slug: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.skillsService.getComments(slug, Number(page) || 1, Number(pageSize) || 20)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('public/:slug/comments')
+  createComment(
+    @CurrentUser() user: JwtUser,
+    @Param('slug') slug: string,
+    @Body() dto: CreateCommentDto,
+  ) {
+    return this.skillsService.createComment(slug, user.sub, dto.content, dto.parentId)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('public/comments/:commentId')
+  deleteComment(
+    @CurrentUser() user: JwtUser,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.skillsService.deleteComment(commentId, user.sub, user.role === 'ADMIN')
   }
 
   @Post('public/:slug/download/count')
