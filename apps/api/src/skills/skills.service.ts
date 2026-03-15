@@ -275,6 +275,54 @@ export class SkillsService {
   }
 
   /* ─── 公开技能详情（by slug） ─── */
+  /* ─── 构建下载 ZIP ─── */
+  async buildDownloadZip(slug: string) {
+    const skill = await this.prisma.skill.findUnique({
+      where: { slug },
+      include: {
+        versions: {
+          where: { publishedAt: { not: null } },
+          orderBy: { publishedAt: 'desc' },
+          take: 1,
+          include: { files: { orderBy: { path: 'asc' } } },
+        },
+      },
+    })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+    if (!skill.versions.length) throw new AppException(HttpStatus.BAD_REQUEST, 'NO_PUBLISHED_VERSION', '该技能暂无已发布版本')
+
+    const version = skill.versions[0]
+
+    // 更新下载计数
+    await this.prisma.skill.update({
+      where: { id: skill.id },
+      data: { downloadCount: { increment: 1 } },
+    })
+
+    const archiver = await import('archiver')
+    const archive = archiver.default('zip', { zlib: { level: 9 } })
+
+    if (version.files.length > 0) {
+      // 有文件列表，按文件树打包
+      for (const file of version.files) {
+        const content = file.encoding === 'base64'
+          ? Buffer.from(file.content, 'base64')
+          : Buffer.from(file.content, 'utf8')
+        archive.append(content, { name: file.path })
+      }
+    } else {
+      // 只有 content，打包为 SKILL.md
+      archive.append(Buffer.from(version.content, 'utf8'), { name: 'SKILL.md' })
+    }
+
+    archive.finalize()
+
+    const safeName = skill.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_')
+    const filename = `${safeName}-v${version.version}.zip`
+
+    return { stream: archive, filename }
+  }
+
   /* ─── 获取公开技能文件列表 ─── */
   async getPublicFiles(slug: string) {
     const skill = await this.prisma.skill.findUnique({

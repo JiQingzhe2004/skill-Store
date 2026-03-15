@@ -67,16 +67,21 @@ export function SkillActions({
   const [downloadCount, setDownloadCount] = useState(initialDownloadCount)
 
   const handleInstall = async () => {
-    if (!isLoggedIn) { window.location.href = '/?auth=login'; return }
     if (installLoading) return
     setInstallLoading(true); setInstallMsg(''); setErrMsg('')
-    const res = await apiRequest<{ message: string }>(`/skills/public/${slug}/install`, { method: 'POST' })
-    if (res.success) {
-      setInstallMsg('✓ 已标记为安装')
+    try {
+      // 触发浏览器下载
+      const a = document.createElement('a')
+      a.href = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/skills/public/${slug}/download`
+      a.download = ''
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
       setDownloadCount(prev => prev + 1)
+      setInstallMsg('✓ 开始下载')
       setTimeout(() => setInstallMsg(''), 3000)
-    } else {
-      setErrMsg(getErrorMessage(res))
+    } catch {
+      setErrMsg('下载失败，请重试')
       setTimeout(() => setErrMsg(''), 3000)
     }
     setInstallLoading(false)

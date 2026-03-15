@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { JwtUser } from '../common/types/jwt-user'
@@ -57,6 +57,19 @@ export class SkillsController {
   @Get('public/:slug/files')
   getPublicFiles(@Param('slug') slug: string) {
     return this.skillsService.getPublicFiles(slug)
+  }
+
+  @Get('public/:slug/download')
+  async download(
+    @Param('slug') slug: string,
+    @Res() res: import('express').Response,
+  ) {
+    const { stream, filename } = await this.skillsService.buildDownloadZip(slug)
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    })
+    stream.pipe(res)
   }
 
   @UseGuards(AccessTokenGuard)
