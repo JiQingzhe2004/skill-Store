@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronRight, File, Folder, FolderOpen, ArrowLeft, FileText } from 'lucide-react'
+import { ChevronRight, File, Folder, FolderOpen, ArrowLeft, FileText, Code, BookOpen } from 'lucide-react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown'
@@ -189,12 +189,22 @@ function FileCodeView({ file, onBack }: { file: FileEntry; onBack: () => void })
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted-foreground">{lines} 行 · {formatSize(file.size)}</span>
           {isMarkdown && (
-            <button
-              onClick={() => setViewRaw(!viewRaw)}
-              className="text-xs text-primary hover:underline"
-            >
-              {viewRaw ? '渲染预览' : '查看源码'}
-            </button>
+            <div className="flex items-center rounded border border-border/60 overflow-hidden">
+              <button
+                title="渲染预览"
+                onClick={() => setViewRaw(false)}
+                className={cn('px-2 py-1 transition-colors', !viewRaw ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+              </button>
+              <button
+                title="查看源码"
+                onClick={() => setViewRaw(true)}
+                className={cn('px-2 py-1 transition-colors', viewRaw ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}
+              >
+                <Code className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -296,9 +306,16 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/60 bg-muted/30">
         <span className="text-sm font-medium text-muted-foreground">{files.length} 个文件</span>
         {selectedFile && isMarkdown && (
-          <button onClick={() => setViewRaw(v => !v)} className="text-xs text-muted-foreground hover:text-foreground px-2 py-0.5 rounded border border-border/60">
-            {viewRaw ? '渲染预览' : '查看源码'}
-          </button>
+          <div className="flex items-center rounded border border-border/60 overflow-hidden">
+            <button title="渲染预览" onClick={() => setViewRaw(false)}
+              className={cn('px-2 py-1 transition-colors', !viewRaw ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
+              <BookOpen className="w-3.5 h-3.5" />
+            </button>
+            <button title="查看源码" onClick={() => setViewRaw(true)}
+              className={cn('px-2 py-1 transition-colors', viewRaw ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')}>
+              <Code className="w-3.5 h-3.5" />
+            </button>
+          </div>
         )}
         {selectedFile && (
           <span className="text-xs text-muted-foreground font-mono">{selectedFile.path}</span>

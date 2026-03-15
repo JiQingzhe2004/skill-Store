@@ -96,7 +96,14 @@ export default async function SkillDetailPage({ params }: Props) {
               </div>
               <p className="text-sm text-muted-foreground mb-2">{skill.description}</p>
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><User className="w-3 h-3" />{skill.author.username}</span>
+                <span className="flex items-center gap-1.5">
+                  {skill.author.avatar ? (
+                    <img src={skill.author.avatar} alt={skill.author.username} className="w-4 h-4 rounded-full object-cover" />
+                  ) : (
+                    <User className="w-3 h-3" />
+                  )}
+                  {skill.author.username}
+                </span>
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />更新于 {new Date(skill.updatedAt).toLocaleDateString('zh-CN')}</span>
                 <span className="flex items-center gap-1"><Store className="w-3 h-3" /><span className="font-mono">{skill.slug}</span></span>
               </div>
