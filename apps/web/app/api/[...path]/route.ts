@@ -14,6 +14,9 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
   const headers = new Headers(request.headers)
   headers.delete('host')
   headers.delete('content-length')
+  // Next.js 15 strips cookie header from request.headers — re-add explicitly
+  const cookieHeader = request.headers.get('cookie')
+  if (cookieHeader) headers.set('cookie', cookieHeader)
 
   const init: RequestInit = {
     method: request.method,
@@ -26,12 +29,17 @@ async function proxyRequest(request: NextRequest, context: { params: Promise<{ p
     if (contentType.includes('multipart/form-data')) {
       init.body = await request.arrayBuffer()
     } else {
-      init.body = await request.text()
+      init.body = await request.arrayBuffer()
     }
   }
 
   let upstreamResponse: Response
   try {
+    if (process.env.NODE_ENV === 'development') {
+      const ct = init.headers instanceof Headers ? init.headers.get('content-type') : 'n/a'
+      const bodyLen = init.body instanceof ArrayBuffer ? init.body.byteLength : (typeof init.body === 'string' ? init.body.length : 0)
+      console.log('[proxy]', request.method, upstreamUrl.toString(), 'ct:', ct, 'bodyLen:', bodyLen)
+    }
     upstreamResponse = await fetch(upstreamUrl, init)
   } catch (err) {
     const cause = err instanceof Error ? err.cause : undefined
