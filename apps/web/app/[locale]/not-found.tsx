@@ -2,9 +2,12 @@
 
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { motion } from 'motion/react'
 import { Boxes, Home, ArrowLeft } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { getMessages, type Locale } from '../../messages'
+
+const ease = [0.25, 0.1, 0.25, 1] as const
 
 export default function NotFound() {
   const { locale } = useParams<{ locale: string }>()
@@ -28,18 +31,41 @@ export default function NotFound() {
       {/* Main */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
         {/* 404 number */}
-        <div className="mb-8">
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease }}
+        >
           <span className="text-[10rem] font-black leading-none tracking-tighter text-muted-foreground/10 select-none">
             404
           </span>
-        </div>
+        </motion.div>
 
-        <h1 className="text-2xl font-bold tracking-tight mb-3">{m.notFound.title}</h1>
-        <p className="text-muted-foreground text-sm max-w-sm leading-relaxed mb-8">
+        <motion.h1
+          className="text-2xl font-bold tracking-tight mb-3"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease, delay: 0.15 }}
+        >
+          {m.notFound.title}
+        </motion.h1>
+
+        <motion.p
+          className="text-muted-foreground text-sm max-w-sm leading-relaxed mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease, delay: 0.2 }}
+        >
           {m.notFound.description}
-        </p>
+        </motion.p>
 
-        <div className="flex items-center gap-3">
+        <motion.div
+          className="flex items-center gap-3"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, ease, delay: 0.3 }}
+        >
           <Button asChild variant="default">
             <Link href={`/${locale ?? 'zh-CN'}`}>
               <Home className="w-4 h-4 mr-2" />
@@ -52,7 +78,7 @@ export default function NotFound() {
               {m.notFound.browseSkills}
             </Link>
           </Button>
-        </div>
+        </motion.div>
 
         <div className="mt-16 flex items-center gap-2 opacity-30">
           {[...Array(5)].map((_, i) => (
