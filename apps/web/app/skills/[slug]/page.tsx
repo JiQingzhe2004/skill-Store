@@ -5,13 +5,9 @@ import { ArrowLeft, User, Tag, Clock, Store } from 'lucide-react'
 import { SiteNav } from '../../../components/site-nav'
 import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../components/ui/card'
 import { fetchCurrentUser } from '../../../lib/server-auth'
 import { serverApiRequest } from '../../../lib/server-api'
 import { SkillActions } from './skill-actions'
-import { RichTextContent } from '../../../components/rich-text-editor'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { SkillFileViewer } from '../../../components/skill-file-viewer'
 
 type SkillDetail = {
@@ -86,92 +82,35 @@ export default async function SkillDetailPage({ params }: Props) {
             </Link>
           </Button>
 
-          {/* Header Card */}
-          <Card className="border-border/60 bg-background/95 shadow-sm mb-6">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <CardTitle className="text-2xl">{skill.name}</CardTitle>
-                    {skill.latestVersion && (
-                      <Badge variant="secondary">v{skill.latestVersion}</Badge>
-                    )}
-                  </div>
-                  <CardDescription className="text-sm leading-relaxed mb-4">
-                    {skill.description}
-                  </CardDescription>
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5" />
-                      <span>{skill.author.username}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>更新于 {new Date(skill.updatedAt).toLocaleDateString('zh-CN')}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Store className="w-3.5 h-3.5" />
-                      <span className="font-mono">{skill.slug}</span>
-                    </div>
-                  </div>
-                </div>
-                <SkillActions
-                  slug={skill.slug}
-                  initialStarCount={skill.starCount}
-                  initialLikeCount={skill.likeCount}
-                  initialStarred={initialStarred}
-                  initialLiked={initialLiked}
-                  initialDownloadCount={skill.downloadCount}
-                  isLoggedIn={!!user}
-                />
+          {/* Header */}
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h1 className="text-xl font-semibold">{skill.name}</h1>
+                {skill.latestVersion && <Badge variant="secondary" className="font-mono">v{skill.latestVersion}</Badge>}
+                {tags.map(tag => (
+                  <Badge key={tag} variant="outline" className="text-xs">
+                    <Tag className="w-3 h-3 mr-1" />{tag}
+                  </Badge>
+                ))}
               </div>
-            </CardHeader>
-            {tags.length > 0 && (
-              <CardContent className="pt-0">
-                <div className="flex flex-wrap gap-2">
-                  {tags.map(tag => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      <Tag className="w-3 h-3 mr-1" />{tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            )}
-          </Card>
-
-          {/* Content */}
-          {skill.versions[0]?.content && (
-            <Card className="border-border/60 bg-background/95 shadow-sm mb-6">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">技能介绍</CardTitle>
-                  {skill.versions.length > 0 && (
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span>版本：</span>
-                      <select className="text-xs border border-border rounded px-2 py-1 bg-background">
-                        {skill.versions.map((v, i) => (
-                          <option key={v.id} value={v.id}>
-                            v{v.version}{i === 0 ? '（最新）' : ''}{v.changelog ? ` — ${v.changelog}` : ''}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {skill.versions[0].content.startsWith('<') ? (
-                  <RichTextContent html={skill.versions[0].content} />
-                ) : (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {skill.versions[0].content}
-                    </ReactMarkdown>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+              <p className="text-sm text-muted-foreground mb-2">{skill.description}</p>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><User className="w-3 h-3" />{skill.author.username}</span>
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />更新于 {new Date(skill.updatedAt).toLocaleDateString('zh-CN')}</span>
+                <span className="flex items-center gap-1"><Store className="w-3 h-3" /><span className="font-mono">{skill.slug}</span></span>
+              </div>
+            </div>
+            <SkillActions
+              slug={skill.slug}
+              initialStarCount={skill.starCount}
+              initialLikeCount={skill.likeCount}
+              initialStarred={initialStarred}
+              initialLiked={initialLiked}
+              initialDownloadCount={skill.downloadCount}
+              isLoggedIn={!!user}
+            />
+          </div>
           {/* File Browser */}
           {skillFiles.length > 0 && (
             <SkillFileViewer files={skillFiles} />
