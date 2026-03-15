@@ -107,6 +107,12 @@ export class SkillsController {
   }
 
   @UseGuards(AccessTokenGuard)
+  @Post('public/:slug/install')
+  install(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.install(slug, user.sub)
+  }
+
+  @UseGuards(AccessTokenGuard)
   @Post(':id/versions/upload')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
   async uploadVersion(

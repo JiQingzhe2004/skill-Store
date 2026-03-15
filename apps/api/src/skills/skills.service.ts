@@ -275,6 +275,45 @@ export class SkillsService {
   }
 
   /* ─── 公开技能详情（by slug） ─── */
+  /* ─── 安装技能 ─── */
+  async install(slug: string, userId: string) {
+    const skill = await this.prisma.skill.findUnique({
+      where: { slug },
+      include: {
+        versions: {
+          where: { publishedAt: { not: null } },
+          orderBy: { publishedAt: 'desc' },
+          take: 1,
+          include: { files: true },
+        },
+      },
+    })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+    if (!skill.versions.length) throw new AppException(HttpStatus.BAD_REQUEST, 'NO_PUBLISHED_VERSION', '该技能暂无已发布版本')
+
+    const version = skill.versions[0]
+
+    // 记录安装
+    await this.prisma.userInstalledSkill.upsert({
+      where: { userId_skillId: { userId, skillId: skill.id } },
+      create: { userId, skillId: skill.id, skillVersionId: version.id, installedVersion: version.version },
+      update: { skillVersionId: version.id, installedVersion: version.version },
+    })
+
+    // 更新下载计数
+    await this.prisma.skill.update({
+      where: { id: skill.id },
+      data: { downloadCount: { increment: 1 } },
+    })
+
+    return {
+      message: '安装成功',
+      version: version.version,
+      files: version.files.map(f => ({ path: f.path, content: f.content, encoding: f.encoding })),
+      content: version.content,
+    }
+  }
+
   async findPublicBySlug(slug: string) {
     const skill = await this.prisma.skill.findUnique({
       where: { slug },

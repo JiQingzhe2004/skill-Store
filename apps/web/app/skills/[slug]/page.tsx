@@ -10,6 +10,8 @@ import { fetchCurrentUser } from '../../../lib/server-auth'
 import { serverApiRequest } from '../../../lib/server-api'
 import { SkillActions } from './skill-actions'
 import { RichTextContent } from '../../../components/rich-text-editor'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 type SkillDetail = {
   id: string
@@ -130,41 +132,32 @@ export default async function SkillDetailPage({ params }: Props) {
           {skill.versions[0]?.content && (
             <Card className="border-border/60 bg-background/95 shadow-sm mb-6">
               <CardHeader>
-                <CardTitle className="text-base">技能内容</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">技能介绍</CardTitle>
+                  {skill.versions.length > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>版本：</span>
+                      <select className="text-xs border border-border rounded px-2 py-1 bg-background">
+                        {skill.versions.map((v, i) => (
+                          <option key={v.id} value={v.id}>
+                            v{v.version}{i === 0 ? '（最新）' : ''}{v.changelog ? ` — ${v.changelog}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <RichTextContent html={skill.versions[0].content} />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Version History */}
-          {skill.versions.length > 0 && (
-            <Card className="border-border/60 bg-background/95">
-              <CardHeader>
-                <CardTitle className="text-base">版本历史</CardTitle>
-                <CardDescription>{skill.versions.length} 个已发布版本</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                {skill.versions.map((v, i) => (
-                  <div
-                    key={v.id}
-                    className="flex items-start justify-between gap-3 rounded-lg border border-border/60 p-4"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-sm font-medium">v{v.version}</span>
-                        {i === 0 && <Badge variant="default" className="text-xs">最新</Badge>}
-                      </div>
-                      {v.changelog && (
-                        <p className="text-xs text-muted-foreground">{v.changelog}</p>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {v.publishedAt && new Date(v.publishedAt).toLocaleDateString('zh-CN')}
-                    </span>
+                {skill.versions[0].content.startsWith('<') ? (
+                  <RichTextContent html={skill.versions[0].content} />
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {skill.versions[0].content}
+                    </ReactMarkdown>
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
           )}
