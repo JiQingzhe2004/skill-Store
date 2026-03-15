@@ -103,9 +103,9 @@ export default async function SkillDetailPage({ params }: Props) {
             />
           </div>
 
-          {/* 如果没有文件，但后端提供了最新版本正文，就直接展示一块内容区 */}
+          {/* 如果没有文件，但后端提供了最新版本正文，就直接展示一块纯文本内容区 */}
           {skillFiles.length === 0 && skill.latestContent && (
-            <article className="mt-4 rounded-lg border border-border/60 bg-card px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words">
+            <article className="mt-4 rounded-lg border border-border/60 bg-card px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words font-mono">
               {skill.latestContent}
             </article>
           )}
