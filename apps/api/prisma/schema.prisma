@@ -39,6 +39,7 @@ model User {
   installedSkills UserInstalledSkill[]
   stars           SkillStar[]
   likes           SkillLike[]
+  apiClients      ApiClient[]
 
   @@map("users")
 }
@@ -189,4 +190,40 @@ model EmailCode {
 
   @@index([userId, purpose, createdAt])
   @@map("email_codes")
+}
+
+enum ApiClientStatus {
+  ACTIVE
+  REVOKED
+}
+
+model ApiClient {
+  id          String          @id @default(cuid()) @db.VarChar(191)
+  ownerId     String          @map("owner_id") @db.VarChar(191)
+  name        String          @db.VarChar(64)
+  keyPrefix   String          @map("key_prefix") @db.VarChar(16)
+  apiKeyHash  String          @map("api_key_hash") @db.VarChar(64)
+  status      ApiClientStatus @default(ACTIVE)
+  lastUsedAt  DateTime?       @map("last_used_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  owner       User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  usageLogs   SkillUsageLog[]
+
+  @@index([ownerId])
+  @@index([apiKeyHash])
+  @@map("api_clients")
+}
+
+model SkillUsageLog {
+  id          String     @id @default(cuid()) @db.VarChar(191)
+  skillId     String?    @map("skill_id") @db.VarChar(191)
+  apiClientId String     @map("api_client_id") @db.VarChar(191)
+  action      String     @db.VarChar(64)
+  requestIp   String?    @map("request_ip") @db.VarChar(45)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  apiClient   ApiClient  @relation(fields: [apiClientId], references: [id], onDelete: Cascade)
+
+  @@index([apiClientId, createdAt])
+  @@index([skillId])
+  @@map("skill_usage_logs")
 }
