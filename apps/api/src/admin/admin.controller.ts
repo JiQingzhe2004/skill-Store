@@ -1,21 +1,30 @@
 import { Controller, Get, Patch, Delete, Param, Query, UseGuards, Body, Post } from '@nestjs/common'
+import { ApiCookieAuth, ApiTags } from '@nestjs/swagger'
 import { UserRole } from '@prisma/client'
 import { AccessTokenGuard } from '../auth/guards/access-token.guard'
 import { RolesGuard } from '../common/guards/roles.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 import { AdminService } from './admin.service'
+import { AdminSetupDto } from './dto/admin-setup.dto'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { JwtUser } from '../common/types/jwt-user'
 
+@ApiTags('Admin')
+@ApiCookieAuth('ss_at')
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  /* ─── 初始化管理员（只需登录 + setup secret）─── */
+  /* ─── 初始化管理员（平台尚无 ADMIN 时，登录 + 密钥）─── */
+  @Get('setup/status')
+  getSetupStatus() {
+    return this.adminService.getSetupStatus()
+  }
+
   @UseGuards(AccessTokenGuard)
   @Post('setup')
-  setup(@CurrentUser() user: JwtUser, @Body('secret') secret: string) {
-    return this.adminService.setupAdmin(user.sub, secret)
+  setup(@CurrentUser() user: JwtUser, @Body() body: AdminSetupDto) {
+    return this.adminService.setupAdmin(user.sub, body.secret)
   }
 
   /* ─── 以下全部需要 ADMIN 角色 ─── */

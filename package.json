@@ -15,6 +15,7 @@
     "db:down": "docker compose down",
     "prisma:generate": "pnpm --filter @skill-store/api prisma:generate",
     "prisma:migrate:dev": "pnpm --filter @skill-store/api prisma:migrate:dev",
+    "admin:promote": "node scripts/promote-admin.mjs",
     "docker:dev": "docker compose -f docker-compose.dev.yml up --build",
     "docker:prod": "docker compose up --build",
     "docker:down": "docker compose down",

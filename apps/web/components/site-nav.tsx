@@ -77,6 +77,14 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
           >
             <Link href={`/${locale}/skills`}>{m.nav.skillMarket}</Link>
           </Button>
+          <Button
+            variant={pathWithoutLocale.startsWith('/docs') ? 'secondary' : 'ghost'}
+            size="sm"
+            asChild
+            className={pathWithoutLocale.startsWith('/docs') ? 'font-medium' : ''}
+          >
+            <Link href={`/${locale}/docs`}>{m.nav.apiDocs}</Link>
+          </Button>
         </nav>
         <div className="flex items-center gap-2 ml-auto">
           <LanguageSwitcher />

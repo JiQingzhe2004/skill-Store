@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UseGuards, UseInterceptors, UploadedFile, BadRequestException, ParseIntPipe } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { CurrentUser } from '../common/decorators/current-user.decorator'
 import { JwtUser } from '../common/types/jwt-user'
@@ -9,7 +10,9 @@ import { UpdateSkillDto } from './dto/update-skill.dto'
 import { CreateVersionDto } from './dto/create-version.dto'
 import { CreateCommentDto } from './dto/create-comment.dto'
 import { ZipService } from './zip.service'
+import { normalizePublicSkillSort } from './skills-public-query'
 
+@ApiTags('Skills')
 @Controller('skills')
 export class SkillsController {
   constructor(
@@ -35,7 +38,7 @@ export class SkillsController {
     return this.skillsService.findPublic(
       page ? parseInt(page, 10) : 1,
       pageSize ? parseInt(pageSize, 10) : 20,
-      { q, tag, sort },
+      { q, tag, sort: sort ? normalizePublicSkillSort(sort) : undefined },
     )
   }
 

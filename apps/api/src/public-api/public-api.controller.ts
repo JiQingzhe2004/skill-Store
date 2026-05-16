@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common'
+import { ApiSecurity, ApiTags } from '@nestjs/swagger'
 import { Request } from 'express'
 
 import { getClientIp } from '../common/utils/request'
@@ -7,6 +8,8 @@ import { ApiKeyGuard } from './guards/api-key.guard'
 import { PublicApiService } from './public-api.service'
 import { ApiClientContext } from './types/api-client-context'
 
+@ApiTags('Public API (v1)')
+@ApiSecurity('api-key')
 @Controller('v1/skills')
 @UseGuards(ApiKeyGuard)
 export class PublicApiController {

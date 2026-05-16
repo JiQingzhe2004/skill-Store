@@ -7,15 +7,43 @@ import { AppException } from '../common/exceptions/app.exception'
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /* ─── 初始化管理员 ─── */
+  async hasAdmin() {
+    const count = await this.prisma.user.count({ where: { role: UserRole.ADMIN } })
+    return count > 0
+  }
+
+  async getSetupStatus() {
+    const needsSetup = !(await this.hasAdmin())
+    const setupConfigured = Boolean(process.env.ADMIN_SETUP_SECRET?.trim())
+    return { needsSetup, setupConfigured }
+  }
+
+  /* ─── 初始化管理员（仅当平台尚无管理员时可用）─── */
   async setupAdmin(userId: string, secret: string) {
-    const expected = process.env.ADMIN_SETUP_SECRET
-    if (!expected || secret !== expected) {
+    if (await this.hasAdmin()) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        'ADMIN_ALREADY_EXISTS',
+        '平台已有管理员，请联系现有管理员分配权限',
+      )
+    }
+
+    const expected = process.env.ADMIN_SETUP_SECRET?.trim()
+    if (!expected) {
+      throw new AppException(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'SETUP_NOT_CONFIGURED',
+        '未配置 ADMIN_SETUP_SECRET，请在服务端环境变量中设置',
+      )
+    }
+
+    if (secret !== expected) {
       throw new AppException(HttpStatus.FORBIDDEN, 'INVALID_SECRET', '密钥错误')
     }
+
     return this.prisma.user.update({
       where: { id: userId },
-      data: { role: 'ADMIN' },
+      data: { role: UserRole.ADMIN },
       select: { id: true, username: true, email: true, role: true },
     })
   }

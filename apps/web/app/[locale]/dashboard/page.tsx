@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { Plus, Boxes, Settings, Store, Download, Star, ThumbsUp, ArrowRight, Package, User, Key, Box } from 'lucide-react'
+import { Plus, Boxes, Settings, Store, Download, Star, ThumbsUp, ArrowRight, Package, User, Key, Box, Shield } from 'lucide-react'
 import { SiteNav } from '../../../components/site-nav'
 import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
@@ -19,6 +19,7 @@ type Skill = {
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
   const m = getMessages(locale as Locale)
+  const adminSetup = m.adminSetup
   const cookieStore = await cookies()
   const headerStore = await headers()
   const host = headerStore.get('host') ?? 'localhost:3000'
@@ -27,8 +28,17 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   const user = await fetchCurrentUser({ host, cookieHeader })
   if (!user) redirect('/?auth=login')
 
-  const skillsRes = await serverApiRequest<Skill[]>('/skills/mine', { host, cookieHeader })
+  const [skillsRes, setupStatusRes] = await Promise.all([
+    serverApiRequest<Skill[]>('/skills/mine', { host, cookieHeader }),
+    user.role !== 'ADMIN'
+      ? serverApiRequest<{ needsSetup: boolean }>('/admin/setup/status', { host, cookieHeader })
+      : Promise.resolve(null),
+  ])
   const skills = skillsRes.success && skillsRes.data ? skillsRes.data : []
+  const showAdminSetupBanner =
+    user.role !== 'ADMIN' &&
+    setupStatusRes?.success &&
+    setupStatusRes.data?.needsSetup === true
 
   const publishedSkills = skills.filter(s => s.status === 'PUBLISHED')
   const draftSkills = skills.filter(s => s.status === 'DRAFT')
@@ -76,6 +86,25 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
               </Link>
             </Button>
           </div>
+
+          {showAdminSetupBanner && (
+            <Card className="border-destructive/30 bg-destructive/5">
+              <CardContent className="pt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-destructive/10 shrink-0">
+                    <Shield className="w-4 h-4 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{adminSetup.dashboardBanner}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{adminSetup.subtitle}</p>
+                  </div>
+                </div>
+                <Button size="sm" asChild className="shrink-0">
+                  <Link href={`/${locale}/setup-admin`}>{adminSetup.dashboardBannerAction}</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <Card className="border-border/60"><CardContent className="pt-5"><div className="flex items-center gap-3"><div className="p-2 rounded-lg bg-primary/10"><Package className="w-4 h-4 text-primary" /></div><div><p className="text-2xl font-bold">{skills.length}</p><p className="text-xs text-muted-foreground">{m.dashboard.totalSkills}</p></div></div></CardContent></Card>

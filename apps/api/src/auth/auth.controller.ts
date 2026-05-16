@@ -8,6 +8,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
 import { Request, Response } from 'express'
 
 import { CurrentUser } from '../common/decorators/current-user.decorator'
@@ -28,6 +29,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto'
 const ONE_MINUTE = 60 * 1000
 const TEN_MINUTES = 10 * 60 * 1000
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(

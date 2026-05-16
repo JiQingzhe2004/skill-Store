@@ -4,7 +4,7 @@ import { SkillStatus, SkillVisibility } from '@prisma/client'
 import { AppException } from '../common/exceptions/app.exception'
 import { PrismaService } from '../prisma/prisma.service'
 import { SkillsService } from '../skills/skills.service'
-import { parseTagsCsv } from '../skills/skills-public-query'
+import { normalizePublicSkillSort, parseTagsCsv } from '../skills/skills-public-query'
 import { canReadSkill } from './public-api.access'
 import { ApiClientContext } from './types/api-client-context'
 
@@ -41,7 +41,11 @@ export class PublicApiService {
     meta?: PublicApiRequestMeta,
     filter?: { q?: string; tag?: string; sort?: string },
   ) {
-    const result = await this.skillsService.findPublic(page, pageSize, filter ?? {})
+    const result = await this.skillsService.findPublic(page, pageSize, {
+      q: filter?.q,
+      tag: filter?.tag,
+      sort: filter?.sort ? normalizePublicSkillSort(filter.sort) : undefined,
+    })
 
     const mapped = {
       ...result,
@@ -151,6 +155,10 @@ export class PublicApiService {
     const versionRow = await this.resolveVersion(skill.id, version, true)
     if (!versionRow) {
       throw new AppException(HttpStatus.NOT_FOUND, 'VERSION_NOT_FOUND', '指定版本不存在或未发布')
+    }
+
+    if (!('files' in versionRow) || !Array.isArray(versionRow.files)) {
+      throw new AppException(HttpStatus.NOT_FOUND, 'VERSION_NOT_FOUND', '版本文件不存在')
     }
 
     const files = versionRow.files.map(f => ({

@@ -82,16 +82,26 @@ pnpm dev
 
 ## 初始化管理员
 
-首次部署后，用已注册的账号调用以下接口将自己设为管理员：
+平台**不会**预置管理员账号，任选一种方式即可：
+
+### 方式一：网页（推荐）
+
+1. 在 `apps/api/.env` 配置 `ADMIN_SETUP_SECRET`（与 `.env.example` 一致即可，部署前请改掉默认值）。
+2. 注册并登录任意账号。
+3. 打开控制台，点击 **「立即设置」**，或直接访问 `/zh-CN/setup-admin`。
+4. 输入与 `ADMIN_SETUP_SECRET` 相同的密钥，确认后自动进入管理后台。
+
+> 首位管理员设置成功后，该接口会自动拒绝再次使用（防止密钥泄露后被滥用）。
+
+### 方式二：命令行（本地 / 运维）
+
+无需密钥，直接提升指定用户（邮箱或用户名）：
 
 ```bash
-curl -X POST http://localhost:3001/api/admin/setup \
-  -H 'Content-Type: application/json' \
-  -b 'your-cookie' \
-  -d '{"secret": "your-ADMIN_SETUP_SECRET"}'
+pnpm admin:promote you@example.com
 ```
 
-设置完成后建议将 `ADMIN_SETUP_SECRET` 改为其他随机字符串。
+若已有管理员但仍要追加，可加 `--force`。
 
 ## Docker 容器化
 
@@ -179,11 +189,20 @@ pnpm docker:dev             # Docker 开发模式（全栈热重载）
 pnpm docker:prod            # Docker 生产模式
 ```
 
+## API 文档
+
+- **Swagger UI**：启动 API 后访问 `http://localhost:3001/api/docs`（或通过前端的 `/api/docs` 代理）
+- **OpenAPI JSON**：`/api/docs-json`
+- **开发者说明页**：`/{locale}/docs`（如 `/zh-CN/docs`）
+- 关闭 Swagger：设置环境变量 `SWAGGER_ENABLED=false`
+
 ## 主要功能
 
 - **用户系统**：注册（邮箱验证）、登录、忘记密码、个人资料（头像/昵称/简介）
 - **技能管理**：创建/编辑技能、版本管理（版本号强制递增）、发布/下架
-- **技能市场**：公开浏览、搜索、作者信息、下载/星标/点赞数展示
+- **技能市场**：公开浏览、搜索、标签筛选、作者信息、下载/星标/点赞数展示
+- **平台内安装**：登录用户一键安装技能，控制台查看「我的安装」
+- **外部 API**：API Key 管理 + `/api/v1/skills` 只读接口与 manifest
 - **互动功能**：星标、点赞（不可自己给自己点）、我的星标列表
 - **管理后台**：用户列表、角色管理、封禁用户（可控时长）、技能管理
 - **骨架屏**：所有数据页面均有加载骨架屏

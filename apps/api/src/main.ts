@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser'
 import { AppModule } from './app.module'
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter'
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor'
+import { setupSwagger } from './swagger.setup'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -24,6 +25,10 @@ async function bootstrap() {
   )
   app.useGlobalInterceptors(new ApiResponseInterceptor())
   app.useGlobalFilters(new AllExceptionsFilter())
+
+  if (process.env.SWAGGER_ENABLED !== 'false') {
+    setupSwagger(app)
+  }
 
   await app.listen(Number(process.env.PORT ?? 3001))
 }
