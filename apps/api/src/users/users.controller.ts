@@ -26,4 +26,10 @@ export class UsersController {
   getMyStars(@CurrentUser() user: JwtUser) {
     return this.usersService.getMyStars(user.sub)
   }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('me/installs')
+  getMyInstalls(@CurrentUser() user: JwtUser) {
+    return this.usersService.getMyInstalls(user.sub)
+  }
 }

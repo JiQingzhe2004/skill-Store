@@ -25,6 +25,44 @@ export class UsersService {
     return user
   }
 
+  async getMyInstalls(userId: string) {
+    const installs = await this.prisma.userInstalledSkill.findMany({
+      where: { userId },
+      orderBy: { installedAt: 'desc' },
+      select: {
+        installedVersion: true,
+        installedAt: true,
+        trackLatest: true,
+        skill: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            description: true,
+            latestVersion: true,
+            status: true,
+            downloadCount: true,
+            starCount: true,
+            likeCount: true,
+            author: { select: { username: true, avatar: true } },
+          },
+        },
+      },
+    })
+
+    return installs.map(row => {
+      const latest = row.skill.latestVersion
+      const hasUpdate = !!latest && latest !== row.installedVersion
+      return {
+        ...row.skill,
+        installedVersion: row.installedVersion,
+        installedAt: row.installedAt,
+        trackLatest: row.trackLatest,
+        hasUpdate,
+      }
+    })
+  }
+
   async getMyStars(userId: string) {
     const stars = await this.prisma.skillStar.findMany({
       where: { userId },

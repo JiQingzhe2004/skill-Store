@@ -25,11 +25,15 @@ export class PublicApiController {
     @Req() request: Request,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('q') q?: string,
+    @Query('tag') tag?: string,
+    @Query('sort') sort?: string,
   ) {
     return this.publicApiService.listSkills(
       page ? parseInt(page, 10) : 1,
       pageSize ? parseInt(pageSize, 10) : 20,
       this.requestMeta(client, request),
+      { q, tag, sort },
     )
   }
 

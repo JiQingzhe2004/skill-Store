@@ -3,6 +3,8 @@ import { SkillStatus, SkillVisibility } from '@prisma/client'
 
 import { AppException } from '../common/exceptions/app.exception'
 import { PrismaService } from '../prisma/prisma.service'
+import { SkillsService } from '../skills/skills.service'
+import { parseTagsCsv } from '../skills/skills-public-query'
 import { canReadSkill } from './public-api.access'
 import { ApiClientContext } from './types/api-client-context'
 
@@ -13,7 +15,10 @@ export type PublicApiRequestMeta = {
 
 @Injectable()
 export class PublicApiService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly skillsService: SkillsService,
+  ) {}
 
   async logUsage(
     apiClientId: string,
@@ -30,47 +35,32 @@ export class PublicApiService {
     })
   }
 
-  async listSkills(page = 1, pageSize = 20, meta?: PublicApiRequestMeta) {
-    const safePage = Math.max(1, page)
-    const safeSize = Math.min(50, Math.max(1, pageSize))
-    const skip = (safePage - 1) * safeSize
+  async listSkills(
+    page = 1,
+    pageSize = 20,
+    meta?: PublicApiRequestMeta,
+    filter?: { q?: string; tag?: string; sort?: string },
+  ) {
+    const result = await this.skillsService.findPublic(page, pageSize, filter ?? {})
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.skill.findMany({
-        where: { status: SkillStatus.PUBLISHED, visibility: SkillVisibility.PUBLIC },
-        orderBy: { updatedAt: 'desc' },
-        skip,
-        take: safeSize,
-        select: {
-          slug: true,
-          name: true,
-          description: true,
-          tags: true,
-          latestVersion: true,
-          updatedAt: true,
-          author: { select: { username: true } },
-        },
-      }),
-      this.prisma.skill.count({
-        where: { status: SkillStatus.PUBLISHED, visibility: SkillVisibility.PUBLIC },
-      }),
-    ])
-
-    const result = {
-      items: items.map(item => ({
-        ...item,
-        tags: this.parseTags(item.tags),
+    const mapped = {
+      ...result,
+      items: result.items.map(item => ({
+        slug: item.slug,
+        name: item.name,
+        description: item.description,
+        tags: parseTagsCsv(item.tags),
+        latestVersion: item.latestVersion,
+        updatedAt: item.updatedAt,
+        author: item.author,
       })),
-      total,
-      page: safePage,
-      pageSize: safeSize,
     }
 
     if (meta) {
       await this.logUsage(meta.apiClientId, 'v1.skills.list', { requestIp: meta.requestIp })
     }
 
-    return result
+    return mapped
   }
 
   async getSkillBySlug(
@@ -112,7 +102,7 @@ export class PublicApiService {
       slug: skill.slug,
       name: skill.name,
       description: skill.description,
-      tags: this.parseTags(skill.tags),
+      tags: parseTagsCsv(skill.tags),
       visibility: skill.visibility,
       version: versionRow.version,
       changelog: versionRow.changelog,
@@ -175,7 +165,7 @@ export class PublicApiService {
       name: skill.name,
       slug: skill.slug,
       description: skill.description,
-      tags: this.parseTags(skill.tags),
+      tags: parseTagsCsv(skill.tags),
       version: versionRow.version,
       author: skill.author,
       publishedAt: versionRow.publishedAt,
@@ -225,8 +215,4 @@ export class PublicApiService {
     })
   }
 
-  private parseTags(tags: string) {
-    if (!tags.trim()) return []
-    return tags.split(',').map(t => t.trim()).filter(Boolean)
-  }
 }

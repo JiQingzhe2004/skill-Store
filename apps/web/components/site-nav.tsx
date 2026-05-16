@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Store, LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus, Star, Shield, Key } from 'lucide-react'
+import { Store, LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus, Star, Shield, Key, Package } from 'lucide-react'
 import { Button } from './ui/button'
 import {
   DropdownMenu,
@@ -137,6 +137,12 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
                   <Link href={`/${locale}/dashboard/stars`}>
                     <Star className="mr-2 h-4 w-4" />
                     {m.nav.myStars}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href={`/${locale}/dashboard/installs`}>
+                    <Package className="mr-2 h-4 w-4" />
+                    {m.nav.myInstalls}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="cursor-pointer">

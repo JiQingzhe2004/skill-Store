@@ -19,14 +19,23 @@ export class SkillsController {
 
   /* ─── 公开接口 ─── */
 
+  @Get('public/tags')
+  findPublicTags() {
+    return this.skillsService.findPublicTags()
+  }
+
   @Get('public')
   findPublic(
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('q') q?: string,
+    @Query('tag') tag?: string,
+    @Query('sort') sort?: string,
   ) {
     return this.skillsService.findPublic(
-      page ? parseInt(page) : 1,
-      pageSize ? parseInt(pageSize) : 20,
+      page ? parseInt(page, 10) : 1,
+      pageSize ? parseInt(pageSize, 10) : 20,
+      { q, tag, sort },
     )
   }
 
@@ -122,6 +131,12 @@ export class SkillsController {
   @Post('public/:slug/install')
   install(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
     return this.skillsService.install(slug, user.sub)
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Delete('public/:slug/install')
+  uninstall(@CurrentUser() user: JwtUser, @Param('slug') slug: string) {
+    return this.skillsService.uninstall(slug, user.sub)
   }
 
   /* ─── 需要登录 ─── */

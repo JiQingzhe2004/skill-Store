@@ -41,7 +41,12 @@ export default async function SkillDetailPage({ params }: Props) {
   const res = await serverApiRequest<SkillDetail>(`/skills/public/${slug}`, { host, cookieHeader })
   const filesRes = await serverApiRequest<{ files: SkillFile[] }>(`/skills/public/${slug}/files`, { host, cookieHeader })
   const interactionRes = user
-    ? await serverApiRequest<{ starred: boolean; liked: boolean }>(`/skills/public/${slug}/me`, { host, cookieHeader })
+    ? await serverApiRequest<{
+        starred: boolean
+        liked: boolean
+        installed: boolean
+        installedVersion: string | null
+      }>(`/skills/public/${slug}/me`, { host, cookieHeader })
     : null
 
   if (!res.success || !res.data) notFound()
@@ -49,6 +54,8 @@ export default async function SkillDetailPage({ params }: Props) {
   const skillFiles = filesRes.success && filesRes.data ? filesRes.data.files : []
   const initialStarred = interactionRes?.success && interactionRes.data ? interactionRes.data.starred : false
   const initialLiked = interactionRes?.success && interactionRes.data ? interactionRes.data.liked : false
+  const initialInstalled = interactionRes?.success && interactionRes.data ? interactionRes.data.installed : false
+  const initialInstalledVersion = interactionRes?.success && interactionRes.data ? interactionRes.data.installedVersion : null
   const tags = skill.tags ? skill.tags.split(',').map(t => t.trim()).filter(Boolean) : []
 
   return (
@@ -94,10 +101,13 @@ export default async function SkillDetailPage({ params }: Props) {
             </div>
             <SkillActions
               slug={skill.slug}
+              latestVersion={skill.latestVersion}
               initialStarCount={skill.starCount}
               initialLikeCount={skill.likeCount}
               initialStarred={initialStarred}
               initialLiked={initialLiked}
+              initialInstalled={initialInstalled}
+              initialInstalledVersion={initialInstalledVersion}
               initialDownloadCount={skill.downloadCount}
               isLoggedIn={!!user}
             />

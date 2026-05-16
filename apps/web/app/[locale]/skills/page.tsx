@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { SiteNav } from '../../../components/site-nav'
 import { Button } from '../../../components/ui/button'
 import { SkillsGridAnimated } from '../../../components/skills-grid-animated'
+import { SkillsMarketToolbar, type PublicTagOption } from '../../../components/skills-market-toolbar'
 import { fetchCurrentUser } from '../../../lib/server-auth'
 import { serverApiRequest } from '../../../lib/server-api'
+import { buildSkillsMarketQuery } from '../../../lib/skills-market-query'
 import { getMessages, type Locale } from '../../../messages'
 
 type PublicSkill = {
@@ -16,12 +18,18 @@ type PublicSkill = {
 }
 
 type PublicSkillsResponse = {
-  items: PublicSkill[]; total: number; page: number; pageSize: number
+  items: PublicSkill[]
+  total: number
+  page: number
+  pageSize: number
+  q?: string | null
+  tag?: string | null
+  sort?: string
 }
 
 type Props = {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string; q?: string; tag?: string; sort?: string }>
 }
 
 export default async function SkillsPage({ params: routeParams, searchParams }: Props) {
@@ -34,24 +42,60 @@ export default async function SkillsPage({ params: routeParams, searchParams }: 
   const cookieHeader = cookieStore.toString()
 
   const user = await fetchCurrentUser({ host, cookieHeader })
-  const page = sp.page ? parseInt(sp.page) : 1
+  const page = sp.page ? parseInt(sp.page, 10) : 1
+  const q = sp.q?.trim() ?? ''
+  const tag = sp.tag?.trim() ?? ''
+  const sort = sp.sort ?? 'updated'
 
-  const res = await serverApiRequest<PublicSkillsResponse>(
-    `/skills/public?page=${page}&pageSize=20`, { host, cookieHeader },
-  )
-  const data = res.success && res.data ? res.data : { items: [], total: 0, page: 1, pageSize: 20 }
-  const totalPages = Math.ceil(data.total / data.pageSize)
+  const query = new URLSearchParams()
+  query.set('page', String(page))
+  query.set('pageSize', '20')
+  if (q) query.set('q', q)
+  if (tag) query.set('tag', tag)
+  if (sort && sort !== 'updated') query.set('sort', sort)
+
+  const [listRes, tagsRes] = await Promise.all([
+    serverApiRequest<PublicSkillsResponse>(`/skills/public?${query.toString()}`, { host, cookieHeader }),
+    serverApiRequest<PublicTagOption[]>('/skills/public/tags', { host, cookieHeader }),
+  ])
+
+  const data = listRes.success && listRes.data
+    ? listRes.data
+    : { items: [], total: 0, page: 1, pageSize: 20 }
+  const tags = tagsRes.success && tagsRes.data ? tagsRes.data : []
+  const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize))
+  const hasFilters = Boolean(q || tag || (sort && sort !== 'updated'))
+
+  const pageLink = (targetPage: number) =>
+    `/${locale}/skills${buildSkillsMarketQuery({ page: targetPage, q, tag, sort })}`
 
   return (
     <div className="min-h-screen flex flex-col">
       <SiteNav user={user} />
       <main className="flex-1 pt-20 px-6">
         <section className="max-w-6xl mx-auto">
+          <SkillsMarketToolbar
+            locale={locale}
+            initialQ={q}
+            initialTag={tag}
+            initialSort={sort}
+            tags={tags}
+          />
+
           {data.items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-32 gap-4">
               <Search className="w-10 h-10 text-muted-foreground/40" />
-              <p className="text-muted-foreground text-sm">{m.skillsPage.empty}</p>
-              <p className="text-muted-foreground text-xs">{m.skillsPage.emptyHint}</p>
+              <p className="text-muted-foreground text-sm">
+                {hasFilters ? m.skillsPage.noResults : m.skillsPage.empty}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {hasFilters ? m.skillsPage.noResultsHint : m.skillsPage.emptyHint}
+              </p>
+              {hasFilters && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/${locale}/skills`}>{m.skillsPage.clearFilters}</Link>
+                </Button>
+              )}
             </div>
           ) : (
             <>
@@ -60,13 +104,13 @@ export default async function SkillsPage({ params: routeParams, searchParams }: 
                 <div className="flex justify-center gap-2 mt-10">
                   {page > 1 && (
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/${locale}/skills?page=${page - 1}`}>{m.skillsPage.prevPage}</Link>
+                      <Link href={pageLink(page - 1)}>{m.skillsPage.prevPage}</Link>
                     </Button>
                   )}
                   <span className="flex items-center px-3 text-sm text-muted-foreground">{page} / {totalPages}</span>
                   {page < totalPages && (
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/${locale}/skills?page=${page + 1}`}>{m.skillsPage.nextPage}</Link>
+                      <Link href={pageLink(page + 1)}>{m.skillsPage.nextPage}</Link>
                     </Button>
                   )}
                 </div>

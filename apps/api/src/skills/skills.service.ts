@@ -5,6 +5,13 @@ import { AppException } from '../common/exceptions/app.exception'
 import { CreateSkillDto } from './dto/create-skill.dto'
 import { UpdateSkillDto } from './dto/update-skill.dto'
 import { CreateVersionDto } from './dto/create-version.dto'
+import {
+  aggregateTagsFromSkills,
+  buildPublicSkillsOrderBy,
+  buildPublicSkillsWhere,
+  normalizePublicSkillSort,
+  type PublicSkillsFilter,
+} from './skills-public-query'
 
 @Injectable()
 export class SkillsService {
@@ -244,7 +251,7 @@ export class SkillsService {
     const skill = await this.prisma.skill.findUnique({ where: { slug }, select: { id: true } })
     if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
 
-    const [star, like] = await this.prisma.$transaction([
+    const [star, like, install] = await this.prisma.$transaction([
       this.prisma.skillStar.findUnique({
         where: { userId_skillId: { userId, skillId: skill.id } },
         select: { userId: true },
@@ -253,11 +260,18 @@ export class SkillsService {
         where: { userId_skillId: { userId, skillId: skill.id } },
         select: { userId: true },
       }),
+      this.prisma.userInstalledSkill.findUnique({
+        where: { userId_skillId: { userId, skillId: skill.id } },
+        select: { installedVersion: true, installedAt: true },
+      }),
     ])
 
     return {
       starred: !!star,
       liked: !!like,
+      installed: !!install,
+      installedVersion: install?.installedVersion ?? null,
+      installedAt: install?.installedAt ?? null,
     }
   }
 
@@ -430,18 +444,32 @@ export class SkillsService {
       update: { installedVersion: version.version },
     })
 
-    // 更新下载计数
-    await this.prisma.skill.update({
-      where: { id: skill.id },
-      data: { downloadCount: { increment: 1 } },
-    })
-
     return {
       message: '安装成功',
+      skillId: skill.id,
+      slug: skill.slug,
+      name: skill.name,
       version: version.version,
-      files: version.files.map(f => ({ path: f.path, content: f.content, encoding: f.encoding })),
-      content: version.content,
+      installedAt: new Date().toISOString(),
     }
+  }
+
+  async uninstall(slug: string, userId: string) {
+    const skill = await this.prisma.skill.findUnique({ where: { slug }, select: { id: true } })
+    if (!skill) throw new AppException(HttpStatus.NOT_FOUND, 'SKILL_NOT_FOUND', '技能不存在')
+
+    const existing = await this.prisma.userInstalledSkill.findUnique({
+      where: { userId_skillId: { userId, skillId: skill.id } },
+    })
+    if (!existing) {
+      throw new AppException(HttpStatus.NOT_FOUND, 'NOT_INSTALLED', '尚未安装该技能')
+    }
+
+    await this.prisma.userInstalledSkill.delete({
+      where: { userId_skillId: { userId, skillId: skill.id } },
+    })
+
+    return { message: '已取消安装' }
   }
 
   async findPublicBySlug(slug: string) {
@@ -476,14 +504,19 @@ export class SkillsService {
   }
 
   /* ─── 公开技能列表 ─── */
-  async findPublic(page = 1, pageSize = 20) {
-    const skip = (page - 1) * pageSize
+  async findPublic(page = 1, pageSize = 20, filter: PublicSkillsFilter = {}) {
+    const safePage = Math.max(1, page)
+    const safeSize = Math.min(50, Math.max(1, pageSize))
+    const skip = (safePage - 1) * safeSize
+    const where = buildPublicSkillsWhere(filter)
+    const orderBy = buildPublicSkillsOrderBy(normalizePublicSkillSort(filter.sort))
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.skill.findMany({
-        where: { status: SkillStatus.PUBLISHED, visibility: SkillVisibility.PUBLIC },
-        orderBy: { updatedAt: 'desc' },
+        where,
+        orderBy,
         skip,
-        take: pageSize,
+        take: safeSize,
         select: {
           id: true, slug: true, name: true, description: true,
           tags: true, latestVersion: true, updatedAt: true,
@@ -491,10 +524,25 @@ export class SkillsService {
           author: { select: { username: true, avatar: true } },
         },
       }),
-      this.prisma.skill.count({
-        where: { status: SkillStatus.PUBLISHED, visibility: SkillVisibility.PUBLIC },
-      }),
+      this.prisma.skill.count({ where }),
     ])
-    return { items, total, page, pageSize }
+
+    return {
+      items,
+      total,
+      page: safePage,
+      pageSize: safeSize,
+      sort: normalizePublicSkillSort(filter.sort),
+      q: filter.q?.trim() || null,
+      tag: filter.tag?.trim() || null,
+    }
+  }
+
+  async findPublicTags(limit = 24) {
+    const skills = await this.prisma.skill.findMany({
+      where: buildPublicSkillsWhere(),
+      select: { tags: true },
+    })
+    return aggregateTagsFromSkills(skills, limit)
   }
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { Plus, Boxes, Settings, Store, Download, Star, ThumbsUp, ArrowRight, Package, User, Key } from 'lucide-react'
+import { Plus, Boxes, Settings, Store, Download, Star, ThumbsUp, ArrowRight, Package, User, Key, Box } from 'lucide-react'
 import { SiteNav } from '../../../components/site-nav'
 import { Button } from '../../../components/ui/button'
 import { Badge } from '../../../components/ui/badge'
@@ -137,7 +137,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <Link href={`/${locale}/dashboard/skills/new`} className="flex items-center gap-3 rounded-lg border border-border/60 px-4 py-3.5 hover:bg-muted/50 transition-colors">
               <div className="p-2 rounded-lg bg-primary/10"><Plus className="w-4 h-4 text-primary" /></div>
               <div><p className="text-sm font-medium">{m.dashboard.createSkill}</p><p className="text-xs text-muted-foreground">{m.dashboard.createSkillDesc}</p></div>
@@ -149,6 +149,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
             <Link href={`/${locale}/dashboard/stars`} className="flex items-center gap-3 rounded-lg border border-border/60 px-4 py-3.5 hover:bg-muted/50 transition-colors">
               <div className="p-2 rounded-lg bg-yellow-500/10"><Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400" /></div>
               <div><p className="text-sm font-medium">{m.dashboard.myStars}</p><p className="text-xs text-muted-foreground">{m.dashboard.myStarsDesc}</p></div>
+            </Link>
+            <Link href={`/${locale}/dashboard/installs`} className="flex items-center gap-3 rounded-lg border border-border/60 px-4 py-3.5 hover:bg-muted/50 transition-colors">
+              <div className="p-2 rounded-lg bg-sky-500/10"><Box className="w-4 h-4 text-sky-600 dark:text-sky-400" /></div>
+              <div><p className="text-sm font-medium">{m.dashboard.myInstalls}</p><p className="text-xs text-muted-foreground">{m.dashboard.myInstallsDesc}</p></div>
             </Link>
             <Link href={`/${locale}/dashboard/api-keys`} className="flex items-center gap-3 rounded-lg border border-border/60 px-4 py-3.5 hover:bg-muted/50 transition-colors">
               <div className="p-2 rounded-lg bg-violet-500/10"><Key className="w-4 h-4 text-violet-600 dark:text-violet-400" /></div>
