@@ -447,6 +447,7 @@ export const zhCN = {
     mySkills: '我的技能',
     createSkill: '创建技能',
     myStars: '我的星标',
+    myInstalls: '我的安装',
     apiKeys: 'API Key',
     accountSettings: '账号设置',
     logout: '退出登录',
