@@ -19,4 +19,4 @@ COPY packages/shared ./packages/shared
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "pnpm install --frozen-lockfile && pnpm --filter @skill-store/web dev"]
+CMD ["pnpm", "--filter", "@skill-store/web", "dev"]

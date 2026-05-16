@@ -131,7 +131,7 @@ export function SkillActions({
       await apiRequest(`/skills/public/${slug}/download/count`, { method: 'POST' })
       setDownloadCount(prev => prev + 1)
       const a = document.createElement('a')
-      a.href = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/skills/public/${slug}/download`
+      a.href = `/api/skills/public/${slug}/download`
       a.download = ''
       document.body.appendChild(a)
       a.click()
