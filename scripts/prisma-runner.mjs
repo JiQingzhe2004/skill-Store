@@ -41,15 +41,17 @@ function loadEnvFile(envPath) {
 
 loadEnvFile(rootEnvPath)
 
-if (!process.env.DATABASE_URL) {
-  console.error('Missing DATABASE_URL. Expected it in the repo root `.env` file.')
-  process.exit(1)
-}
-
 const userArgs = process.argv.slice(2)
 
 if (userArgs.length === 0) {
   console.error('No Prisma command provided.')
+  process.exit(1)
+}
+
+// generate 只需要 schema，不需要 DATABASE_URL；其它命令（migrate / db push 等）才需要
+const needsDbUrl = userArgs[0] !== 'generate'
+if (needsDbUrl && !process.env.DATABASE_URL) {
+  console.error('Missing DATABASE_URL. Set it in the repo root `.env` or pass it via env.')
   process.exit(1)
 }
 
