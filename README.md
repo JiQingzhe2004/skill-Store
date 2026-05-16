@@ -110,16 +110,38 @@ pnpm admin:promote you@example.com
 ### 开发模式（热重载）
 
 ```bash
+# 前台启动（日志打在终端，Ctrl+C 会停掉全部容器）
 pnpm docker:dev
+
+# 后台启动（容器在后台跑，关掉终端也不停）
+pnpm docker:dev:detached
+
+# 查看是否在跑
+pnpm docker:ps
 ```
 
-启动后：
-- 前端：http://localhost:3000（Next.js 热重载）
-- 后端：http://localhost:3001（NestJS watch 模式）
-- Mailpit UI：http://localhost:8025
-- MySQL：localhost:3306
+**一条命令会同时拉起**：MySQL → Mailpit → API（等数据库健康）→ Web。任一环节失败（镜像拉取、端口占用）则整组起不来。
+
+**不会自动发生的情况**：开机不会自己 `docker:dev`；需要你先执行上面的命令，或之前用 detached 起过且 Docker Desktop 设为开机启动（`restart: unless-stopped` 只会在 Docker 重启后恢复**已有**容器）。
+
+启动后（**默认宿主机端口**，避免与常见 3000/3001/3306 冲突）：
+
+| 服务 | 地址 |
+|------|------|
+| 前端 | http://localhost:**4520** |
+| 后端 | http://localhost:**4521**（Swagger：`/api/docs`）|
+| Mailpit | http://localhost:**8025** |
+| MySQL | `localhost:**13306**` |
+
+可在仓库根目录 `.env` 中覆盖：`DOCKER_WEB_PORT`、`DOCKER_API_PORT`、`DOCKER_MYSQL_PORT`。
 
 源码目录（`apps/api/src`、`apps/web/src`、`packages/shared`）已挂载为 volume，修改代码后自动重载，无需重建镜像。
+
+**Windows 常见问题**
+
+- **3306 bind / access permissions**：MySQL 已默认映射到 **13306**；本地 `pnpm dev` 时 `DATABASE_URL` 请用 `@localhost:13306`。
+- **3100/3101 bind forbidden**：Windows 常保留 **3084–3183** 端口段，Docker 默认已改为 **4520（web）/ 4521（api）**。Docker Desktop 点启动仍 500 时，先 `pnpm docker:down:dev` 再 `pnpm docker:dev:detached` 重建容器。
+- **拉取镜像 EOF（`docker.mirrors.ustc.edu.cn`）**：是中科大镜像站不稳定，与项目无关。打开 Docker Desktop → Settings → Docker Engine，删除或更换 `registry-mirrors` 后 Apply，再执行 `docker pull node:20-alpine` 成功后重试 `pnpm docker:dev`。也可临时改用 `https://docker.1ms.run` 等可用镜像加速。
 
 ### 生产模式
 

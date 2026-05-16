@@ -1,5 +1,7 @@
 import { AuthUser, ApiResponse } from '@skill-store/shared'
 
+import { buildServerApiUrl } from './server-api-url'
+
 type FetchCurrentUserParams = {
   host: string
   cookieHeader?: string
@@ -11,22 +13,25 @@ export async function fetchCurrentUser({
   cookieHeader,
   fetchImpl = fetch,
 }: FetchCurrentUserParams): Promise<AuthUser | null> {
-  const protocol = host.includes('localhost') ? 'http' : 'https'
-  const response = await fetchImpl(`${protocol}://${host}/api/auth/me`, {
-    method: 'GET',
-    cache: 'no-store',
-    headers: cookieHeader
-      ? {
-          cookie: cookieHeader,
-        }
-      : undefined,
-  })
+  try {
+    const response = await fetchImpl(buildServerApiUrl(host, '/auth/me'), {
+      method: 'GET',
+      cache: 'no-store',
+      headers: cookieHeader
+        ? {
+            cookie: cookieHeader,
+          }
+        : undefined,
+    })
 
-  const payload = (await response.json().catch(() => null)) as ApiResponse<AuthUser> | null
+    const payload = (await response.json().catch(() => null)) as ApiResponse<AuthUser> | null
 
-  if (!response.ok || !payload?.success || !payload.data) {
+    if (!response.ok || !payload?.success || !payload.data) {
+      return null
+    }
+
+    return payload.data
+  } catch {
     return null
   }
-
-  return payload.data
 }
