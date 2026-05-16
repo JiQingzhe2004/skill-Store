@@ -13,7 +13,7 @@ describe('buildServerApiUrl', () => {
     )
   })
 
-  it('uses API_BASE_URL in Docker SSR', () => {
+  it('uses API_BASE_URL when set (server-internal call)', () => {
     process.env.API_BASE_URL = 'http://api:3001'
     expect(buildServerApiUrl('localhost:4520', '/auth/me')).toBe(
       'http://api:3001/api/auth/me',

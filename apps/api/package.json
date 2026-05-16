@@ -8,6 +8,7 @@
     "start": "node dist/main.js",
     "prisma:generate": "node ../../scripts/prisma-runner.mjs generate",
     "prisma:migrate:dev": "node ../../scripts/prisma-runner.mjs migrate dev",
+    "prisma:migrate:deploy": "node ../../scripts/prisma-runner.mjs migrate deploy",
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {

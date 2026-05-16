@@ -12,6 +12,7 @@ import { PublicApiModule } from './public-api/public-api.module'
 import { MailerModule } from './mailer/mailer.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { RateLimitModule } from './rate-limit/rate-limit.module'
+import { SetupModule } from './setup/setup.module'
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { RateLimitModule } from './rate-limit/rate-limit.module'
     AdminModule,
     ApiClientsModule,
     PublicApiModule,
+    SetupModule,
   ],
 })
 export class AppModule {}

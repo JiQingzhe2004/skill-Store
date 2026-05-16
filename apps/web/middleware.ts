@@ -3,9 +3,38 @@ import { NextRequest, NextResponse } from 'next/server'
 const SUPPORTED_LOCALES = ['zh-CN', 'en-US'] as const
 const DEFAULT_LOCALE = 'zh-CN'
 
+const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3001'
+const STATUS_TTL_MS = 5_000
+
+let setupComplete: boolean | null = null
+let lastChecked = 0
+
+async function isSetupComplete(): Promise<boolean> {
+  if (setupComplete === true) return true
+  const now = Date.now()
+  if (setupComplete === false && now - lastChecked < STATUS_TTL_MS) return false
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 1500)
+    const res = await fetch(`${API_BASE_URL}/api/setup/status`, {
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    clearTimeout(timeout)
+    const payload = (await res.json().catch(() => null)) as
+      | { success?: boolean; data?: { setupComplete?: boolean } }
+      | null
+    setupComplete = !!payload?.data?.setupComplete
+    lastChecked = now
+    return setupComplete
+  } catch {
+    lastChecked = now
+    return setupComplete === true
+  }
+}
+
 function getLocaleFromHeader(request: NextRequest): string {
   const acceptLanguage = request.headers.get('accept-language') ?? ''
-  // Parse Accept-Language header: e.g. "en-US,en;q=0.9,zh-CN;q=0.8"
   const languages = acceptLanguage
     .split(',')
     .map((lang) => {
@@ -15,11 +44,9 @@ function getLocaleFromHeader(request: NextRequest): string {
     .sort((a, b) => b.quality - a.quality)
 
   for (const { code } of languages) {
-    // Exact match
     if (SUPPORTED_LOCALES.includes(code as (typeof SUPPORTED_LOCALES)[number])) {
       return code
     }
-    // Prefix match: "en" → "en-US", "zh" → "zh-CN"
     const prefix = code.split('-')[0]
     const match = SUPPORTED_LOCALES.find((l) => l.startsWith(prefix))
     if (match) return match
@@ -28,10 +55,17 @@ function getLocaleFromHeader(request: NextRequest): string {
   return DEFAULT_LOCALE
 }
 
-export function middleware(request: NextRequest) {
+function stripLocale(pathname: string): { locale: string; rest: string } {
+  for (const locale of SUPPORTED_LOCALES) {
+    if (pathname === `/${locale}`) return { locale, rest: '/' }
+    if (pathname.startsWith(`/${locale}/`)) return { locale, rest: pathname.slice(`/${locale}`.length) }
+  }
+  return { locale: '', rest: pathname }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip API routes, Next.js internals, and static assets
   if (
     pathname.startsWith('/api') ||
     pathname.startsWith('/_next') ||
@@ -42,30 +76,46 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check if pathname already has a supported locale prefix
   const pathnameLocale = SUPPORTED_LOCALES.find(
     (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
   )
 
+  const ready = await isSetupComplete()
+  const { locale: pathLocale, rest } = stripLocale(pathname)
+
+  if (!ready) {
+    const onSetup = rest === '/setup' || rest.startsWith('/setup/')
+    if (!onSetup) {
+      const detected = pathLocale || request.cookies.get('NEXT_LOCALE')?.value || getLocaleFromHeader(request)
+      const safeLocale = SUPPORTED_LOCALES.includes(detected as (typeof SUPPORTED_LOCALES)[number])
+        ? detected
+        : DEFAULT_LOCALE
+      const url = request.nextUrl.clone()
+      url.pathname = `/${safeLocale}/setup`
+      return NextResponse.redirect(url)
+    }
+  } else if (rest === '/setup') {
+    const url = request.nextUrl.clone()
+    url.pathname = `/${pathLocale || DEFAULT_LOCALE}`
+    return NextResponse.redirect(url)
+  }
+
   if (pathnameLocale) {
-    // Already has locale prefix — set cookie and let pass
     const response = NextResponse.next()
     response.cookies.set('NEXT_LOCALE', pathnameLocale, {
       path: '/',
-      maxAge: 365 * 24 * 60 * 60, // 1 year
+      maxAge: 365 * 24 * 60 * 60,
       sameSite: 'lax',
     })
     return response
   }
 
-  // Detect locale from cookie or Accept-Language header
   const cookieLocale = request.cookies.get('NEXT_LOCALE')?.value
   const detectedLocale =
     cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale as (typeof SUPPORTED_LOCALES)[number])
       ? cookieLocale
       : getLocaleFromHeader(request)
 
-  // Redirect to /{locale}{pathname}
   const url = request.nextUrl.clone()
   url.pathname = `/${detectedLocale}${pathname}`
   const response = NextResponse.redirect(url)
