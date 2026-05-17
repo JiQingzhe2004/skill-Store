@@ -2,7 +2,6 @@ import { headers, cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, User, Tag, Clock, Store } from 'lucide-react'
-import { SiteNav } from '../../../../components/site-nav'
 import { Button } from '../../../../components/ui/button'
 import { Badge } from '../../../../components/ui/badge'
 import { fetchCurrentUser } from '../../../../lib/server-auth'
@@ -60,8 +59,6 @@ export default async function SkillDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <SiteNav user={user} />
-
       <main className="flex-1 pt-16">
         <section className="py-10 px-6 max-w-4xl mx-auto">
           <Button variant="ghost" size="sm" asChild className="mb-6">

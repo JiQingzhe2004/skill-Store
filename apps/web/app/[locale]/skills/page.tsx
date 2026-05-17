@@ -1,7 +1,6 @@
 import { headers, cookies } from 'next/headers'
 import { Search } from 'lucide-react'
 import Link from 'next/link'
-import { SiteNav } from '../../../components/site-nav'
 import { Button } from '../../../components/ui/button'
 import { SkillsGridAnimated } from '../../../components/skills-grid-animated'
 import { SkillsMarketToolbar, type PublicTagOption } from '../../../components/skills-market-toolbar'
@@ -71,7 +70,6 @@ export default async function SkillsPage({ params: routeParams, searchParams }: 
 
   return (
     <div className="min-h-screen flex flex-col">
-      <SiteNav user={user} />
       <main className="flex-1 pt-20 px-6">
         <section className="max-w-6xl mx-auto">
           <SkillsMarketToolbar

@@ -1,7 +1,6 @@
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { fetchCurrentUser } from '../../../../../lib/server-auth'
-import { SiteNav } from '../../../../../components/site-nav'
 import { NewSkillForm } from './new-skill-form'
 import { getMessages, type Locale } from '../../../../../messages'
 
@@ -16,7 +15,6 @@ export default async function NewSkillPage({ params }: { params: Promise<{ local
 
   return (
     <>
-      <SiteNav user={user} />
       <main className="min-h-screen px-4 py-10 pt-24">
         <div className="mx-auto max-w-2xl">
           <div className="mb-8">

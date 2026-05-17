@@ -358,17 +358,29 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
   return (
     <div
       className={cn(
-        'rounded-lg border border-border/60 overflow-hidden bg-white dark:bg-zinc-900',
+        'relative rounded-lg border border-border/60 overflow-hidden bg-white dark:bg-zinc-900 transition-[border-radius,border-width] duration-200',
         fullscreen
-          ? 'fixed inset-0 z-50 m-0 rounded-none border-0 flex flex-col'
+          ? 'fixed inset-0 z-50 m-0 rounded-none border-0 flex flex-col viewer-fullscreen-enter'
           : 'mt-6',
       )}
     >
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/60 bg-muted/30">
-        <span className="text-sm font-medium text-muted-foreground">{m.fileViewer.files.replace('{count}', String(files.length))}</span>
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-border/60 bg-muted/30">
+        <span className="text-sm font-medium text-muted-foreground shrink-0">{m.fileViewer.files.replace('{count}', String(files.length))}</span>
         {selectedFile && (
-          <span className="text-xs text-muted-foreground font-mono truncate ml-3">{selectedFile.path}</span>
+          <span className="flex-1 min-w-0 text-xs text-muted-foreground font-mono truncate text-right">{selectedFile.path}</span>
+        )}
+        {selectedFile && isMarkdown && (
+          <div className="flex items-center rounded border border-border/60 overflow-hidden shadow-sm shrink-0">
+            <button title={m.fileViewer.renderPreview} onClick={() => setViewRaw(false)}
+              className={cn('px-2 py-1 transition-colors', !viewRaw ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}>
+              <BookOpen className="w-3.5 h-3.5" />
+            </button>
+            <button title={m.fileViewer.viewSource} onClick={() => setViewRaw(true)}
+              className={cn('px-2 py-1 transition-colors', viewRaw ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}>
+              <Code className="w-3.5 h-3.5" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -388,18 +400,6 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
 
         {/* Right: content */}
         <div className="flex-1 overflow-auto relative">
-          {selectedFile && isMarkdown && (
-            <div className="absolute top-2 right-2 z-10 flex items-center rounded border border-border/60 overflow-hidden shadow-sm">
-              <button title={m.fileViewer.renderPreview} onClick={() => setViewRaw(false)}
-                className={cn('px-2 py-1 transition-colors', !viewRaw ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}>
-                <BookOpen className="w-3.5 h-3.5" />
-              </button>
-              <button title={m.fileViewer.viewSource} onClick={() => setViewRaw(true)}
-                className={cn('px-2 py-1 transition-colors', viewRaw ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}>
-                <Code className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
           {selectedFile ? (
             isMarkdown && !viewRaw ? (
               <div className="p-6 prose prose-sm dark:prose-invert max-w-none">
@@ -411,18 +411,21 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
           ) : (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">{m.fileViewer.selectFile}</div>
           )}
-
-          {/* 右下角全屏按钮 */}
-          <button
-            type="button"
-            title={fullscreen ? m.fileViewer.exitFullscreen : m.fileViewer.enterFullscreen}
-            onClick={() => setFullscreen(v => !v)}
-            className="absolute bottom-3 right-3 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-background/90 backdrop-blur border border-border/60 shadow-md hover:bg-muted hover:scale-105 transition"
-          >
-            {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
         </div>
       </div>
+
+      {/* 右下角全屏按钮：放在外层非滚动容器内，不随内容滚动；全屏时切到 fixed 锚定视口 */}
+      <button
+        type="button"
+        title={fullscreen ? m.fileViewer.exitFullscreen : m.fileViewer.enterFullscreen}
+        onClick={() => setFullscreen(v => !v)}
+        className={cn(
+          'z-50 flex items-center justify-center w-9 h-9 rounded-full bg-background/90 backdrop-blur border border-border/60 shadow-md hover:bg-muted hover:scale-105 transition-transform duration-150',
+          fullscreen ? 'fixed bottom-4 right-4' : 'absolute bottom-3 right-3',
+        )}
+      >
+        {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+      </button>
     </div>
   )
 }

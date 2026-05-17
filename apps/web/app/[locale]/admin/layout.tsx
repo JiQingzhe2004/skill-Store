@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { LayoutDashboard, Users, Boxes, Shield } from 'lucide-react'
 import { fetchCurrentUser } from '../../../lib/server-auth'
-import { SiteNav } from '../../../components/site-nav'
 import { getMessages, type Locale } from '../../../messages'
 
 export default async function AdminLayout({
@@ -32,7 +31,6 @@ export default async function AdminLayout({
 
   return (
     <>
-      <SiteNav user={user} />
       <div className="min-h-screen pt-14 flex">
         {/* Sidebar */}
         <aside className="w-52 shrink-0 border-r border-border/50 py-6 px-3 hidden md:block">

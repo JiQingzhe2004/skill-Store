@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Key } from 'lucide-react'
-import { SiteNav } from '../../../../components/site-nav'
 import { Button } from '../../../../components/ui/button'
 import { fetchCurrentUser } from '../../../../lib/server-auth'
 import { serverApiRequest } from '../../../../lib/server-api'
@@ -25,7 +24,6 @@ export default async function ApiKeysPage({ params }: { params: Promise<{ locale
 
   return (
     <>
-      <SiteNav user={user} />
       <main className="min-h-screen px-4 py-10 pt-24">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center gap-3 mb-6">

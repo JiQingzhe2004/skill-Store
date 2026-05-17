@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus, Star, Shield, Key, Package } from 'lucide-react'
 import { Button } from './ui/button'
 import { BrandLogo } from './brand-logo'
@@ -29,8 +29,6 @@ type NavUser = {
 
 type SiteNavProps = {
   user?: NavUser
-  initialAuthView?: AuthView | null
-  initialAuthEmail?: string
 }
 
 function useLocale() {
@@ -39,14 +37,38 @@ function useLocale() {
   return segments[1] || 'zh-CN'
 }
 
-export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail = '' }: SiteNavProps) {
+// 这些路径不显示导航（setup 向导、登录、注册自带独立布局）
+const NAV_HIDDEN_PATHS = ['/setup', '/login', '/register']
+
+export function SiteNav({ user = null }: SiteNavProps) {
   const router = useRouter()
   const pathname = usePathname()
   const locale = useLocale()
   const m = getMessages(locale as Locale)
   const [loggingOut, setLoggingOut] = useState(false)
-  const [authOpen, setAuthOpen] = useState(!!initialAuthView)
-  const [authView, setAuthView] = useState<AuthView>(initialAuthView ?? 'login')
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authView, setAuthView] = useState<AuthView>('login')
+  const [authEmail, setAuthEmail] = useState('')
+
+  // 监听 URL ?auth=login|register 自动打开对话框（首页注册引导用）
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const sp = new URLSearchParams(window.location.search)
+    const view = sp.get('auth')
+    if (user) return
+    if (view === 'login' || view === 'register') {
+      setAuthView(view)
+      setAuthEmail(sp.get('email') ?? '')
+      setAuthOpen(true)
+    }
+  }, [pathname, user])
+
+  // 在无 nav 的页面隐藏（layout 永远渲染 SiteNav，由它自己决定要不要显示）
+  const pathWithoutLocale = pathname.replace(new RegExp(`^/${locale}`), '')
+  const normalizedPath = pathWithoutLocale || '/'
+  if (NAV_HIDDEN_PATHS.some(p => normalizedPath === p || normalizedPath.startsWith(`${p}/`))) {
+    return null
+  }
 
   const openAuth = (view: AuthView) => {
     setAuthView(view)
@@ -59,8 +81,6 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
     router.push(`/${locale}`)
     router.refresh()
   }
-
-  const pathWithoutLocale = pathname.replace(new RegExp(`^/${locale}`), '')
 
   return (
     <>
@@ -201,7 +221,7 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
         open={authOpen}
         onOpenChange={setAuthOpen}
         defaultView={authView}
-        defaultEmail={initialAuthEmail}
+        defaultEmail={authEmail}
       />
     </>
   )

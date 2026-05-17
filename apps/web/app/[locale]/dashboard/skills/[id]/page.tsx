@@ -2,7 +2,6 @@ import { cookies, headers } from 'next/headers'
 import { redirect, notFound } from 'next/navigation'
 import { fetchCurrentUser } from '../../../../../lib/server-auth'
 import { serverApiRequest } from '../../../../../lib/server-api'
-import { SiteNav } from '../../../../../components/site-nav'
 import { SkillEditor } from './skill-editor'
 
 type Skill = {
@@ -53,7 +52,6 @@ export default async function SkillDetailPage({ params }: Props) {
 
   return (
     <>
-      <SiteNav user={user} />
       <main className="min-h-screen px-4 py-10 pt-24">
         <div className="mx-auto max-w-4xl">
           <SkillEditor

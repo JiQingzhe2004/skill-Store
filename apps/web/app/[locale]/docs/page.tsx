@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
 import { BookOpen, ExternalLink, Key, Lock, Package, Server } from 'lucide-react'
-import { SiteNav } from '../../../components/site-nav'
 import { Button } from '../../../components/ui/button'
 import { fetchCurrentUser } from '../../../lib/server-auth'
 import { getMessages, type Locale } from '../../../messages'
@@ -20,7 +19,6 @@ export default async function DocsPage({ params }: { params: Promise<{ locale: s
 
   return (
     <>
-      <SiteNav user={user} />
       <main className="min-h-screen px-4 py-10 pt-24">
         <div className="mx-auto max-w-3xl space-y-10">
           <div>

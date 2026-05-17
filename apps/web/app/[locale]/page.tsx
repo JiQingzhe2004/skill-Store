@@ -2,39 +2,28 @@ import Link from 'next/link'
 import { headers, cookies } from 'next/headers'
 import { Boxes, Download, Share2, Sparkles, LayoutDashboard, Store, ArrowRight } from 'lucide-react'
 import { Button } from '../../components/ui/button'
-import { SiteNav } from '../../components/site-nav'
 import { HeroAnimated, FeaturesAnimated } from '../../components/home-animations'
 import { HeroBackground } from '../../components/hero-background'
 import { fetchCurrentUser } from '../../lib/server-auth'
 import { getMessages, type Locale } from '../../messages'
-import type { AuthView } from '../../components/auth-dialog'
-
-const validAuthViews: AuthView[] = ['login', 'register']
 
 type HomePageProps = {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ auth?: string; email?: string }>
 }
 
-export default async function HomePage({ params, searchParams }: HomePageProps) {
+export default async function HomePage({ params }: HomePageProps) {
   const { locale } = await params
   const headersList = await headers()
   const cookieStore = await cookies()
   const host = headersList.get('host') ?? 'localhost:3000'
   const cookieHeader = cookieStore.toString()
-  const sp = await searchParams
 
   const user = await fetchCurrentUser({ host, cookieHeader })
   const messages = getMessages(locale as Locale)
   const m = messages.home
 
-  const authView = validAuthViews.includes(sp.auth as AuthView) ? (sp.auth as AuthView) : null
-  const authEmail = sp.email ?? ''
-
   return (
     <div className="min-h-screen flex flex-col">
-      <SiteNav user={user} initialAuthView={user ? null : authView} initialAuthEmail={authEmail} />
-
       <main className="relative flex-1 pt-16 overflow-hidden">
         <HeroBackground />
 

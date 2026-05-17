@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Shield } from 'lucide-react'
-import { SiteNav } from '../../../components/site-nav'
 import { Button } from '../../../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
 import { fetchCurrentUser } from '../../../lib/server-auth'
@@ -36,7 +35,6 @@ export default async function SetupAdminPage({ params }: { params: Promise<{ loc
   if (!status.needsSetup) {
     return (
       <>
-        <SiteNav user={user} />
         <main className="min-h-screen px-4 py-10 pt-24">
           <div className="mx-auto max-w-lg">
             <Card className="border-border/60">
@@ -61,7 +59,6 @@ export default async function SetupAdminPage({ params }: { params: Promise<{ loc
 
   return (
     <>
-      <SiteNav user={user} />
       <main className="min-h-screen px-4 py-10 pt-24">
         <div className="mx-auto max-w-lg">
           <Card className="border-border/60">

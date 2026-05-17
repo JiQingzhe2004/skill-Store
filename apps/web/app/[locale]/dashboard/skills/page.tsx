@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import { Plus, Pencil, Globe, Lock, EyeOff, BookOpen } from 'lucide-react'
 import { fetchCurrentUser } from '../../../../lib/server-auth'
 import { serverApiRequest } from '../../../../lib/server-api'
-import { SiteNav } from '../../../../components/site-nav'
 import { Button } from '../../../../components/ui/button'
 import { Badge } from '../../../../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../../../components/ui/card'
@@ -45,7 +44,6 @@ export default async function MySkillsPage({ params }: { params: Promise<{ local
 
   return (
     <>
-      <SiteNav user={user} />
       <main className="min-h-screen px-4 py-10 pt-24">
         <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between mb-8">

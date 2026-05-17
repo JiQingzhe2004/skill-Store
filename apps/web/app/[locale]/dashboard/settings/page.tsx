@@ -2,7 +2,6 @@ import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { fetchCurrentUser } from '../../../../lib/server-auth'
 import { serverApiRequest } from '../../../../lib/server-api'
-import { SiteNav } from '../../../../components/site-nav'
 import { SettingsForm } from './settings-form'
 import { getMessages, type Locale } from '../../../../messages'
 
@@ -32,7 +31,6 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
 
   return (
     <>
-      <SiteNav user={user} />
       <main className="min-h-screen px-4 py-10 pt-24">
         <div className="mx-auto max-w-2xl">
           <h1 className="text-xl font-semibold mb-6">{m.settingsPage.title}</h1>
