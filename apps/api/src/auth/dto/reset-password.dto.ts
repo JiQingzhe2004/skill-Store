@@ -3,15 +3,15 @@ import { IsEmail, IsString, Length, Matches } from 'class-validator'
 
 import { normalizeEmail, normalizePassword } from '../../common/utils/request'
 
-export class RegisterDto {
+export class ResetPasswordDto {
   @Transform(({ value }) => normalizeEmail(String(value)))
   @IsEmail({}, { message: '请输入有效邮箱' })
   email!: string
 
   @Transform(({ value }) => String(value).trim())
   @IsString()
-  @Length(2, 32, { message: '昵称长度需在 2 到 32 个字符之间' })
-  username!: string
+  @Matches(/^\d{6}$/, { message: '验证码必须为 6 位数字' })
+  code!: string
 
   @Transform(({ value }) => normalizePassword(String(value)))
   @IsString()

@@ -9,6 +9,11 @@ export interface RuntimeConfig {
   jwtRefreshSecret: string
   appUrl: string
   adminSetupSecret?: string
+  smtpHost?: string
+  smtpPort?: number
+  smtpUser?: string
+  smtpPass?: string
+  smtpFrom?: string
 }
 
 const ENV_KEYS: Record<keyof Omit<RuntimeConfig, 'setupComplete'>, string> = {
@@ -18,6 +23,11 @@ const ENV_KEYS: Record<keyof Omit<RuntimeConfig, 'setupComplete'>, string> = {
   jwtRefreshSecret: 'JWT_REFRESH_SECRET',
   appUrl: 'APP_URL',
   adminSetupSecret: 'ADMIN_SETUP_SECRET',
+  smtpHost: 'SMTP_HOST',
+  smtpPort: 'SMTP_PORT',
+  smtpUser: 'SMTP_USER',
+  smtpPass: 'SMTP_PASS',
+  smtpFrom: 'SMTP_FROM',
 }
 
 export function getDataDir(): string {

@@ -22,12 +22,26 @@ class DbConnectionDto {
   @IsOptional() @IsString() shadowDatabase?: string
 }
 
+class SmtpDto {
+  @IsString() @IsNotEmpty() host!: string
+  @IsInt() @Min(1) @Max(65535) port!: number
+  @IsOptional() @IsString() user?: string
+  @IsOptional() @IsString() pass?: string
+  @IsString() @IsNotEmpty() from!: string
+}
+
 class TestDbDto {
   @ValidateNested() @Type(() => DbConnectionDto) db!: DbConnectionDto
 }
 
+class TestSmtpDto {
+  @ValidateNested() @Type(() => SmtpDto) smtp!: SmtpDto
+  @IsOptional() @IsString() to?: string
+}
+
 class SubmitSetupDto {
   @ValidateNested() @Type(() => DbConnectionDto) db!: DbConnectionDto
+  @ValidateNested() @Type(() => SmtpDto) smtp!: SmtpDto
   @IsUrl({ require_tld: false }) appUrl!: string
   @IsString() @IsNotEmpty() adminSetupSecret!: string
   @IsOptional() @IsString() jwtAccessSecret?: string
@@ -46,6 +60,11 @@ export class SetupController {
   @Post('test-db')
   testDb(@Body() body: TestDbDto) {
     return this.setupService.testConnection(body.db)
+  }
+
+  @Post('test-smtp')
+  testSmtp(@Body() body: TestSmtpDto) {
+    return this.setupService.testSmtp(body.smtp, body.to)
   }
 
   @Post('submit')

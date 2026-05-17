@@ -19,8 +19,12 @@ import { AuthService } from './auth.service'
 import { CookieService } from './cookie.service'
 import { AccessTokenGuard } from './guards/access-token.guard'
 import { RefreshTokenGuard } from './guards/refresh-token.guard'
+import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
+import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto'
+import { ResetPasswordDto } from './dto/reset-password.dto'
+import { VerifyEmailDto } from './dto/verify-email.dto'
 
 const ONE_MINUTE = 60 * 1000
 const TEN_MINUTES = 10 * 60 * 1000
@@ -36,18 +40,31 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(200)
-  async register(@Body() dto: RegisterDto, @Req() request: Request, @Res({ passthrough: true }) response: Response) {
+  async register(@Body() dto: RegisterDto, @Req() request: Request) {
     const ip = getClientIp(request)
     this.limitByEmail('register', dto.email, 1, ONE_MINUTE, 'RATE_LIMIT_EMAIL', '该邮箱请求过于频繁')
     this.limitByIp('register', ip, 5, TEN_MINUTES, 'RATE_LIMIT_IP', '注册请求过于频繁')
 
-    const result = await this.authService.register(dto)
-    this.cookieService.setAuthCookies(response, result.accessToken, result.refreshToken)
+    return this.authService.register(dto)
+  }
 
-    return {
-      user: result.user,
-      message: '注册成功',
-    }
+  @Post('resend-verification-code')
+  @HttpCode(200)
+  async resendVerificationCode(@Body() dto: ResendVerificationCodeDto, @Req() request: Request) {
+    const ip = getClientIp(request)
+    this.limitByEmail('resend', dto.email, 1, ONE_MINUTE, 'RATE_LIMIT_EMAIL', '该邮箱请求过于频繁')
+    this.limitByIp('resend', ip, 5, TEN_MINUTES, 'RATE_LIMIT_IP', '验证码发送过于频繁')
+
+    return this.authService.resendVerificationCode(dto)
+  }
+
+  @Post('verify-email')
+  @HttpCode(200)
+  async verifyEmail(@Body() dto: VerifyEmailDto, @Req() request: Request) {
+    const ip = getClientIp(request)
+    this.limitByIp('verify-email', ip, 10, TEN_MINUTES, 'RATE_LIMIT_IP', '验证请求过于频繁')
+
+    return this.authService.verifyEmail(dto)
   }
 
   @Post('login')
@@ -99,6 +116,25 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   async me(@CurrentUser() user: JwtUser) {
     return this.authService.getCurrentUser(user.sub)
+  }
+
+  @Post('forgot-password')
+  @HttpCode(200)
+  async forgotPassword(@Body() dto: ForgotPasswordDto, @Req() request: Request) {
+    const ip = getClientIp(request)
+    this.limitByEmail('forgot-password', dto.email, 1, ONE_MINUTE, 'RATE_LIMIT_EMAIL', '该邮箱请求过于频繁')
+    this.limitByIp('forgot-password', ip, 5, TEN_MINUTES, 'RATE_LIMIT_IP', '请求过于频繁')
+
+    return this.authService.forgotPassword(dto)
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(@Body() dto: ResetPasswordDto, @Req() request: Request) {
+    const ip = getClientIp(request)
+    this.limitByIp('reset-password', ip, 5, TEN_MINUTES, 'RATE_LIMIT_IP', '请求过于频繁')
+
+    return this.authService.resetPassword(dto)
   }
 
   private limitByIp(

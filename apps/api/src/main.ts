@@ -1,12 +1,21 @@
+import { existsSync, mkdirSync } from 'node:fs'
+import path from 'node:path'
+
 import { Logger, ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
+import { NestExpressApplication } from '@nestjs/platform-express'
 import cookieParser from 'cookie-parser'
 
 import { AppModule } from './app.module'
 import { SetupAppModule } from './setup-app.module'
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter'
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor'
-import { applyRuntimeConfigToEnv, isSetupComplete, loadRuntimeConfig } from './config/runtime-config'
+import {
+  applyRuntimeConfigToEnv,
+  getDataDir,
+  isSetupComplete,
+  loadRuntimeConfig,
+} from './config/runtime-config'
 import { setupSwagger } from './swagger.setup'
 
 async function bootstrap() {
@@ -22,7 +31,7 @@ async function bootstrap() {
     logger.warn('Runtime config missing — booting in SETUP mode. Visit the web UI to finish setup.')
   }
 
-  const app = await NestFactory.create(moduleClass)
+  const app = await NestFactory.create<NestExpressApplication>(moduleClass)
 
   app.setGlobalPrefix('api')
   app.use(cookieParser())
@@ -39,6 +48,18 @@ async function bootstrap() {
   )
   app.useGlobalInterceptors(new ApiResponseInterceptor())
   app.useGlobalFilters(new AllExceptionsFilter())
+
+  // Public avatar files — mounted at /api/avatars/* so the existing web
+  // /api/[...path] proxy passes them through unchanged.
+  if (setupComplete) {
+    const avatarDir = path.join(getDataDir(), 'avatars')
+    if (!existsSync(avatarDir)) mkdirSync(avatarDir, { recursive: true })
+    app.useStaticAssets(avatarDir, {
+      prefix: '/api/avatars/',
+      maxAge: '7d',
+      etag: true,
+    })
+  }
 
   if (setupComplete && process.env.SWAGGER_ENABLED !== 'false') {
     setupSwagger(app)

@@ -1,18 +1,14 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator'
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator'
 
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
-  @MaxLength(32)
+  @MinLength(2, { message: '昵称至少 2 个字符' })
+  @MaxLength(32, { message: '昵称最多 32 个字符' })
   username?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(200)
   bio?: string
-
-  @IsOptional()
-  @IsString()
-  // base64 data URI, 最大约 6.7MB (5MB file)
-  avatar?: string
 }

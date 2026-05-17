@@ -4,6 +4,7 @@ import path from 'node:path'
 
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { PrismaClient } from '@prisma/client'
+import nodemailer from 'nodemailer'
 
 import {
   RuntimeConfig,
@@ -22,8 +23,17 @@ export interface DbConnection {
   shadowDatabase?: string
 }
 
+export interface SmtpConnection {
+  host: string
+  port: number
+  user?: string
+  pass?: string
+  from: string
+}
+
 export interface SubmitSetupPayload {
   db: DbConnection
+  smtp: SmtpConnection
   appUrl: string
   adminSetupSecret: string
   jwtAccessSecret?: string
@@ -64,6 +74,31 @@ export class SetupService {
     }
   }
 
+  async testSmtp(smtp: SmtpConnection, to?: string): Promise<{ ok: true } | { ok: false; error: string }> {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtp.host,
+        port: smtp.port,
+        secure: Number(smtp.port) === 465,
+        auth: smtp.user ? { user: smtp.user, pass: smtp.pass ?? '' } : undefined,
+      })
+      await transporter.verify()
+      if (to) {
+        await transporter.sendMail({
+          from: smtp.from,
+          to,
+          subject: 'Skill Store SMTP 测试邮件',
+          text: '如果你收到这封邮件，说明 SMTP 配置工作正常。',
+          html: '<p>如果你收到这封邮件，说明 <strong>SMTP 配置工作正常</strong>。</p>',
+        })
+      }
+      return { ok: true }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return { ok: false, error: message }
+    }
+  }
+
   async submit(payload: SubmitSetupPayload): Promise<{ ok: true }> {
     if (isSetupComplete()) {
       throw new BadRequestException('Setup has already been completed')
@@ -85,6 +120,11 @@ export class SetupService {
       jwtAccessSecret: payload.jwtAccessSecret || randomBytes(48).toString('hex'),
       jwtRefreshSecret: payload.jwtRefreshSecret || randomBytes(48).toString('hex'),
       adminSetupSecret: payload.adminSetupSecret,
+      smtpHost: payload.smtp.host,
+      smtpPort: payload.smtp.port,
+      smtpUser: payload.smtp.user || undefined,
+      smtpPass: payload.smtp.pass || undefined,
+      smtpFrom: payload.smtp.from,
     }
 
     saveRuntimeConfig(config)

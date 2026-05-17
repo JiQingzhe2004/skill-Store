@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Camera, User } from 'lucide-react'
+import { Camera, Loader2, User } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { Button } from '../../../../components/ui/button'
 import { Input } from '../../../../components/ui/input'
@@ -26,6 +26,8 @@ type UserProfile = {
   createdAt: string
 } | null
 
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
 export function SettingsForm({ profile }: { profile: UserProfile }) {
   const router = useRouter()
   const { locale } = useParams<{ locale: string }>()
@@ -39,6 +41,7 @@ export function SettingsForm({ profile }: { profile: UserProfile }) {
 
   const [avatar, setAvatar] = useState<string | null>(profile?.avatar ?? null)
   const [avatarError, setAvatarError] = useState('')
+  const [avatarUploading, setAvatarUploading] = useState(false)
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -50,11 +53,11 @@ export function SettingsForm({ profile }: { profile: UserProfile }) {
     },
   })
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setAvatarError('')
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setAvatarError(m.settingsPage.avatarSizeError)
       return
     }
@@ -62,16 +65,49 @@ export function SettingsForm({ profile }: { profile: UserProfile }) {
       setAvatarError(m.settingsPage.avatarTypeError)
       return
     }
-    const reader = new FileReader()
-    reader.onload = (ev) => { setAvatar(ev.target?.result as string) }
-    reader.readAsDataURL(file)
+
+    setAvatarUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await apiRequest<UserProfile>('/users/me/avatar', {
+        method: 'POST',
+        body: form,
+      })
+      if (!res.success) {
+        setAvatarError(getErrorMessage(res))
+        return
+      }
+      setAvatar(res.data?.avatar ?? null)
+      router.refresh()
+    } finally {
+      setAvatarUploading(false)
+      // reset input so the same file can be re-selected if needed
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleAvatarRemove = async () => {
+    setAvatarError('')
+    setAvatarUploading(true)
+    try {
+      const res = await apiRequest<UserProfile>('/users/me/avatar', { method: 'DELETE' })
+      if (!res.success) {
+        setAvatarError(getErrorMessage(res))
+        return
+      }
+      setAvatar(null)
+      router.refresh()
+    } finally {
+      setAvatarUploading(false)
+    }
   }
 
   const onSubmit = form.handleSubmit(async (values) => {
     setMsg(null)
     const res = await apiRequest('/users/me', {
       method: 'PATCH',
-      body: JSON.stringify({ username: values.username, bio: values.bio || undefined, avatar: avatar ?? undefined }),
+      body: JSON.stringify({ username: values.username, bio: values.bio || undefined }),
     })
     if (!res.success) { setMsg({ type: 'err', text: getErrorMessage(res) }); return }
     setMsg({ type: 'ok', text: m.settingsPage.saveSuccess })
@@ -87,7 +123,7 @@ export function SettingsForm({ profile }: { profile: UserProfile }) {
           <div className="flex flex-col items-center gap-3">
             <div
               className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-border cursor-pointer group"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => !avatarUploading && fileInputRef.current?.click()}
             >
               {avatar ? (
                 <img src={avatar} alt={m.settingsPage.avatarCard} className="w-full h-full object-cover" />
@@ -97,12 +133,14 @@ export function SettingsForm({ profile }: { profile: UserProfile }) {
                 </div>
               )}
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                <Camera className="w-5 h-5 text-white" />
+                {avatarUploading
+                  ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  : <Camera className="w-5 h-5 text-white" />}
               </div>
             </div>
             <p className="text-xs text-muted-foreground text-center">{m.settingsPage.avatarHint}</p>
-            {avatar && (
-              <button type="button" className="text-xs text-destructive hover:underline" onClick={() => setAvatar(null)}>
+            {avatar && !avatarUploading && (
+              <button type="button" className="text-xs text-destructive hover:underline" onClick={handleAvatarRemove}>
                 {m.settingsPage.removeAvatar}
               </button>
             )}

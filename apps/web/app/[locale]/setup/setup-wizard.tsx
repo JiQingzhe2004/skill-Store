@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, Database, Loader2, Settings2, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Database, Loader2, Mail, Settings2, ShieldCheck } from 'lucide-react'
 
 import { Button } from '../../../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
 import { Input } from '../../../components/ui/input'
 import { Label } from '../../../components/ui/label'
 
-type Step = 1 | 2 | 3
+type Step = 1 | 2 | 3 | 4
 
 type DbForm = {
   host: string
@@ -20,6 +20,15 @@ type DbForm = {
   shadowDatabase: string
 }
 
+type SmtpForm = {
+  host: string
+  port: string
+  user: string
+  pass: string
+  from: string
+  testTo: string
+}
+
 type SiteForm = {
   appUrl: string
   adminSetupSecret: string
@@ -27,8 +36,9 @@ type SiteForm = {
 
 const stepLabels: { id: Step; label: string; icon: typeof Database }[] = [
   { id: 1, label: '数据库', icon: Database },
-  { id: 2, label: '站点信息', icon: Settings2 },
-  { id: 3, label: '完成安装', icon: ShieldCheck },
+  { id: 2, label: '邮件 SMTP', icon: Mail },
+  { id: 3, label: '站点信息', icon: Settings2 },
+  { id: 4, label: '完成安装', icon: ShieldCheck },
 ]
 
 async function apiPost<T>(path: string, body: unknown): Promise<{ ok: boolean; data?: T; error?: string }> {
@@ -62,6 +72,14 @@ export function SetupWizard({ locale }: { locale: string }) {
     database: 'skill_store',
     shadowDatabase: 'skill_store_shadow',
   })
+  const [smtp, setSmtp] = useState<SmtpForm>({
+    host: '',
+    port: '587',
+    user: '',
+    pass: '',
+    from: 'Skill Store <no-reply@example.com>',
+    testTo: '',
+  })
   const [site, setSite] = useState<SiteForm>({
     appUrl: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
     adminSetupSecret: '',
@@ -69,6 +87,9 @@ export function SetupWizard({ locale }: { locale: string }) {
 
   const [dbTesting, setDbTesting] = useState(false)
   const [dbResult, setDbResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const [smtpTesting, setSmtpTesting] = useState(false)
+  const [smtpResult, setSmtpResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -137,6 +158,35 @@ export function SetupWizard({ locale }: { locale: string }) {
     setDbResult({ ok: true, message: '连接成功' })
   }
 
+  const testSmtp = async () => {
+    setSmtpTesting(true)
+    setSmtpResult(null)
+    const res = await apiPost<{ ok: boolean; error?: string }>('/setup/test-smtp', {
+      smtp: {
+        host: smtp.host.trim(),
+        port: Number(smtp.port),
+        user: smtp.user.trim() || undefined,
+        pass: smtp.pass || undefined,
+        from: smtp.from.trim(),
+      },
+      to: smtp.testTo.trim() || undefined,
+    })
+    setSmtpTesting(false)
+    if (!res.ok) {
+      setSmtpResult({ ok: false, message: res.error ?? '连接失败' })
+      return
+    }
+    const data = res.data
+    if (data && data.ok === false) {
+      setSmtpResult({ ok: false, message: data.error ?? '连接失败' })
+      return
+    }
+    setSmtpResult({
+      ok: true,
+      message: smtp.testTo.trim() ? '连接成功，测试邮件已发送' : '连接成功（未发送测试邮件）',
+    })
+  }
+
   const handleSubmit = async () => {
     setSubmitError(null)
     setSubmitting(true)
@@ -148,6 +198,13 @@ export function SetupWizard({ locale }: { locale: string }) {
         password: db.password,
         database: db.database.trim(),
         shadowDatabase: db.shadowDatabase.trim() || undefined,
+      },
+      smtp: {
+        host: smtp.host.trim(),
+        port: Number(smtp.port),
+        user: smtp.user.trim() || undefined,
+        pass: smtp.pass || undefined,
+        from: smtp.from.trim(),
       },
       appUrl: site.appUrl.trim(),
       adminSetupSecret: site.adminSetupSecret.trim(),
@@ -168,7 +225,7 @@ export function SetupWizard({ locale }: { locale: string }) {
             <CheckCircle2 className="w-5 h-5 text-emerald-500" />
             安装完成
           </CardTitle>
-          <CardDescription>系统已就绪。下一步：注册第一个账号，然后用初始化密钥提升为管理员。</CardDescription>
+          <CardDescription>系统已就绪。下一步：注册第一个账号，邮箱验证后通过初始化密钥提升为管理员。</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-sm">
@@ -205,7 +262,7 @@ export function SetupWizard({ locale }: { locale: string }) {
         <CardDescription>检测到系统尚未初始化，请填写以下信息完成部署。</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
           {stepLabels.map((s, i) => (
             <div key={s.id} className="flex items-center gap-2">
               <div
@@ -267,7 +324,7 @@ export function SetupWizard({ locale }: { locale: string }) {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              提示：两个数据库都需要预先创建好，并赋予填写的用户读写权限。
+              提示：两个数据库都需要预先创建好（可使用 release 包内的 <code>create-db.sh</code> 一键建库），并赋予填写的用户读写权限。
             </p>
             <div className="flex justify-end">
               <Button onClick={() => setStep(2)} disabled={!dbResult?.ok}>
@@ -278,6 +335,54 @@ export function SetupWizard({ locale }: { locale: string }) {
         )}
 
         {step === 2 && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>SMTP 主机</Label>
+                <Input value={smtp.host} onChange={(e) => setSmtp({ ...smtp, host: e.target.value })} placeholder="smtp.example.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>端口</Label>
+                <Input value={smtp.port} onChange={(e) => setSmtp({ ...smtp, port: e.target.value })} placeholder="587" />
+              </div>
+              <div className="space-y-2">
+                <Label>用户名（可选）</Label>
+                <Input value={smtp.user} onChange={(e) => setSmtp({ ...smtp, user: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>密码 / 授权码（可选）</Label>
+                <Input type="password" value={smtp.pass} onChange={(e) => setSmtp({ ...smtp, pass: e.target.value })} />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>发件人（From）</Label>
+                <Input value={smtp.from} onChange={(e) => setSmtp({ ...smtp, from: e.target.value })} placeholder='Skill Store &lt;no-reply@your-domain.com&gt;' />
+                <p className="text-xs text-muted-foreground">格式：<code>显示名 &lt;邮箱地址&gt;</code>，邮箱建议与 SMTP 用户名一致。</p>
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>测试收件人（可选，填了会发一封测试邮件）</Label>
+                <Input value={smtp.testTo} onChange={(e) => setSmtp({ ...smtp, testTo: e.target.value })} placeholder="your-email@example.com" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={testSmtp} disabled={smtpTesting || !smtp.host || !smtp.from}>
+                {smtpTesting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                测试 SMTP
+              </Button>
+              {smtpResult && (
+                <span className={`text-sm ${smtpResult.ok ? 'text-emerald-600' : 'text-destructive'}`}>{smtpResult.message}</span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              SMTP 用于发送注册验证码和忘记密码邮件。端口 465 走 SSL，587 走 STARTTLS。
+            </p>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(1)}>上一步</Button>
+              <Button onClick={() => setStep(3)} disabled={!smtp.host || !smtp.from}>下一步</Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>站点访问地址（APP_URL）</Label>
@@ -295,22 +400,23 @@ export function SetupWizard({ locale }: { locale: string }) {
               </p>
             </div>
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(1)}>上一步</Button>
-              <Button onClick={() => setStep(3)} disabled={!site.appUrl || !site.adminSetupSecret}>下一步</Button>
+              <Button variant="outline" onClick={() => setStep(2)}>上一步</Button>
+              <Button onClick={() => setStep(4)} disabled={!site.appUrl || !site.adminSetupSecret}>下一步</Button>
             </div>
           </div>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <div className="space-y-4">
             <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-sm space-y-2">
               <p><span className="text-muted-foreground">数据库：</span>{db.user}@{db.host}:{db.port}/{db.database}</p>
+              <p><span className="text-muted-foreground">SMTP：</span>{smtp.host}:{smtp.port} ({smtp.from})</p>
               <p><span className="text-muted-foreground">站点：</span>{site.appUrl}</p>
               <p><span className="text-muted-foreground">JWT 密钥：</span>提交时由服务端自动生成 64 字节随机串</p>
             </div>
             {submitError && <p className="text-sm text-destructive">{submitError}</p>}
             <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(2)} disabled={submitting}>上一步</Button>
+              <Button variant="outline" onClick={() => setStep(3)} disabled={submitting}>上一步</Button>
               <Button onClick={handleSubmit} disabled={submitting}>
                 {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 确认并开始安装

@@ -1,11 +1,21 @@
 #!/usr/bin/env node
 /**
  * 打包发布制品。产出：
- *   release/skill-store/         — 自包含的部署目录（含 api / web / 启动脚本）
- *   release/skill-store-<ver>.tar.gz — 同上的压缩包，方便上传服务器
+ *   release/skill-store/                        ← 解压后的根目录
+ *   ├── app/                                    ← 应用制品（api + web + ecosystem.config.cjs）
+ *   ├── install.sh / install.ps1                ← 一键部署脚本（同级）
+ *   ├── create-db.sh / create-db.ps1            ← 一键建库脚本（root 密码即可）
+ *   ├── scripts/promote-admin.mjs               ← 运维脚本
+ *   ├── README.md
+ *   └── VERSION
  *
- * 站长只需把 tar.gz 上传到服务器，解压后跑 `./install.sh`（Linux/macOS）
- * 或 `powershell -ExecutionPolicy Bypass -File install.ps1`（Windows）即可。
+ *   release/skill-store-<version>.tar.gz        ← 上述目录的压缩包
+ *
+ * 站长流程：
+ *   tar -xzf skill-store-<version>.tar.gz
+ *   cd skill-store
+ *   ./create-db.sh        # 用 root 密码一键建库 + 应用账号
+ *   ./install.sh          # 拉 Node 22 + pm2，启动 app/
  */
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, statSync, readdirSync, chmodSync } from 'node:fs'
 import path from 'node:path'
@@ -15,7 +25,10 @@ import { spawnSync } from 'node:child_process'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 const releaseRoot = path.join(repoRoot, 'release')
-const stageRoot = path.join(releaseRoot, 'skill-store')
+const stageRoot = path.join(releaseRoot, 'skill-store')        // 解压后根目录
+const appRoot = path.join(stageRoot, 'app')                    // 应用制品文件夹
+
+const REQUIRED_NODE_MAJOR = 22
 
 const log = (...args) => console.log('[package]', ...args)
 const fail = (msg, err) => {
@@ -51,6 +64,7 @@ function ensureCleanStage() {
     rmSync(stageRoot, { recursive: true, force: true })
   }
   mkdirSync(stageRoot, { recursive: true })
+  mkdirSync(appRoot, { recursive: true })
 }
 
 function readPkgVersion() {
@@ -73,7 +87,7 @@ function buildWeb() {
 
 function deployApi() {
   const apiSrc = path.join(repoRoot, 'apps', 'api')
-  const apiStage = path.join(stageRoot, 'api')
+  const apiStage = path.join(appRoot, 'api')
   log('staging API source →', path.relative(repoRoot, apiStage))
 
   mkdirSync(apiStage, { recursive: true })
@@ -95,8 +109,9 @@ function deployApi() {
   }
   writeFileSync(path.join(apiStage, 'package.json'), JSON.stringify(prodPkg, null, 2))
 
-  // 预创建 data/ 目录，runtime.json 会写进来
+  // 预创建 data/ 目录，runtime.json / avatars/ 会写进来
   mkdirSync(path.join(apiStage, 'data'), { recursive: true })
+  mkdirSync(path.join(apiStage, 'data', 'avatars'), { recursive: true })
 }
 
 function copyWebStandalone() {
@@ -104,7 +119,7 @@ function copyWebStandalone() {
   if (!existsSync(standaloneSrc)) {
     fail('apps/web/.next/standalone 不存在；请先确认 next.config.ts 启用 output: "standalone" 并构建成功')
   }
-  const webStage = path.join(stageRoot, 'web')
+  const webStage = path.join(appRoot, 'web')
   log('copying web standalone bundle →', path.relative(repoRoot, webStage))
   // 把 standalone 整个目录变成 web/ —— 内部结构是 apps/web/server.js + node_modules
   copyDir(standaloneSrc, webStage)
@@ -120,13 +135,15 @@ function copyWebStandalone() {
   )
 }
 
-function writeReleaseFiles() {
-  // 部署后用的 PM2 配置（路径相对 stageRoot）
+function writeAppEcosystem() {
+  // PM2 配置，cwd 是 app/ 子目录中的 api/ 与 web/。install.sh 会
+  //   cd app && pm2 start ecosystem.config.cjs
   const ecosystem = `/**
  * PM2 配置 —— 由 scripts/package.mjs 自动生成。
- *  pm2 start ecosystem.config.cjs
- *  pm2 restart ecosystem.config.cjs
- *  pm2 logs
+ * 这份文件在 app/ 目录里，所有 cwd 都是相对 app/ 的子目录。
+ *   cd app && pm2 start ecosystem.config.cjs
+ *   pm2 restart ecosystem.config.cjs
+ *   pm2 logs
  */
 module.exports = {
   apps: [
@@ -159,84 +176,105 @@ module.exports = {
   ],
 }
 `
-  writeFileSync(path.join(stageRoot, 'ecosystem.config.cjs'), ecosystem)
+  writeFileSync(path.join(appRoot, 'ecosystem.config.cjs'), ecosystem)
+}
 
-  // 版本号
-  writeFileSync(path.join(stageRoot, 'VERSION'), `${readPkgVersion()}\n`)
+function writeReleaseDocs() {
+  const version = readPkgVersion()
+  writeFileSync(path.join(stageRoot, 'VERSION'), `${version}\n`)
 
-  // 部署说明
-  const deployReadme = `# Skill Store 部署包
-
-## 一键部署（推荐）
-
-\`\`\`bash
-# Linux / macOS
-./install.sh
-
-# Windows（PowerShell，管理员）
-powershell -ExecutionPolicy Bypass -File install.ps1
-\`\`\`
-
-install 脚本会自动：
-1. 检测并安装 Node.js 20+（系统未装时）
-2. 全局安装 pm2（未装时）
-3. 用 pm2 启动 \`skill-store-api\` 与 \`skill-store-web\`
-4. 配置 pm2 开机自启
-5. 提示你访问 http://server-ip:3000 完成 Web 端安装向导
-
-## 浏览器完成首次安装
-
-部署完成后访问 http://server-ip:3000，自动跳到 /setup 向导：
-1. 填写 MySQL 连接信息（站点需提前建好两个库：主库 + shadow 库）
-2. 设置 APP_URL（域名）和管理员初始化密钥
-3. 点 "确认并开始安装" → 后端自动跑数据库迁移 → 自动重启
-
-之后注册首个账号 → 访问 /setup-admin → 输入初始化密钥成为管理员。
+  const readme = `# Skill Store 部署包 v${version}
 
 ## 目录结构
 
 \`\`\`
 .
-├── api/                 # NestJS 后端（自包含 node_modules）
-│   ├── dist/main.js     # 入口
-│   ├── prisma/          # schema + migrations
-│   └── data/            # runtime.json（向导生成）
-├── web/                 # Next.js 前端 standalone 产物
-│   └── apps/web/server.js
-├── ecosystem.config.cjs # pm2 配置
-├── install.sh / install.ps1
-└── VERSION
+├── app/                          # 应用制品（部署内容）
+│   ├── api/                      # NestJS 后端（自包含 node_modules）
+│   │   ├── dist/main.js          # 入口
+│   │   ├── prisma/               # schema + migrations
+│   │   └── data/                 # runtime.json + avatars/（向导生成）
+│   ├── web/                      # Next.js 前端 standalone 产物
+│   │   └── apps/web/server.js    # 入口
+│   └── ecosystem.config.cjs      # pm2 配置（cwd 都相对 app/）
+├── install.sh / install.ps1      # 一键部署（安装 Node 22 + pm2 + 启动）
+├── create-db.sh / create-db.ps1  # 一键建库（用 MySQL root 密码建主库/影子库/应用用户）
+├── scripts/promote-admin.mjs     # 命令行提升管理员
+└── README.md
 \`\`\`
+
+## 推荐流程
+
+\`\`\`bash
+# 1. 解压
+tar -xzf skill-store-${version}.tar.gz
+cd skill-store
+
+# 2. 一键建库（输入 MySQL root 密码即可）
+./create-db.sh                    # Linux / macOS
+# Windows：powershell -ExecutionPolicy Bypass -File create-db.ps1
+
+# 3. 一键部署
+./install.sh                      # Linux / macOS
+# Windows：powershell -ExecutionPolicy Bypass -File install.ps1
+\`\`\`
+
+\`install.sh\` 自动完成：
+1. 检测并安装 Node.js ${REQUIRED_NODE_MAJOR} LTS（系统未装时）
+2. 全局安装 pm2（未装时）
+3. 进入 \`app/api\` 跑 \`npm install --omit=dev\`
+4. 用 pm2 启动 \`skill-store-api\`（3001）和 \`skill-store-web\`（3000）
+5. 提示 pm2 开机自启
+6. 提示你访问 http://server-ip:3000 完成 Web 端安装向导
+
+## 浏览器完成首次安装
+
+部署完成后访问 http://server-ip:3000 → 自动跳到 \`/setup\` 向导：
+1. **数据库**：填入 \`create-db.sh\` 输出的连接信息 → 测试连接
+2. **SMTP**：填入邮件服务器（用于注册验证码 / 忘记密码） → 测试发送
+3. **站点信息**：APP_URL + 管理员初始化密钥（建议保存）
+4. **完成安装**：后端跑 prisma migrate deploy → 自动重启
+
+之后注册首个账号 → 完成邮箱验证 → 访问 \`/setup-admin\` 输入初始化密钥成为管理员。
+
+## 反向代理
+
+部署脚本只让 \`app/\` 在 3000（web）和 3001（api）上跑起来。
+对外暴露域名请自行加 Nginx / Caddy / 1Panel 等反代到 3000。
 
 ## 常用运维命令
 
 \`\`\`bash
-pm2 status                            # 进程状态
-pm2 logs skill-store-api              # API 日志
-pm2 logs skill-store-web              # Web 日志
-pm2 restart ecosystem.config.cjs      # 重启全部
-node scripts/promote-admin.mjs <邮箱>  # 命令行提升管理员
+pm2 status                                    # 进程状态
+pm2 logs skill-store-api                      # API 日志
+pm2 logs skill-store-web                      # Web 日志
+cd app && pm2 restart ecosystem.config.cjs    # 重启全部
+node scripts/promote-admin.mjs <邮箱>          # 命令行提升管理员
 \`\`\`
 
 ## 重新初始化
 
-删除 \`api/data/runtime.json\` 后 \`pm2 restart skill-store-api\`，浏览器会再次进入安装向导。
-`
-  writeFileSync(path.join(stageRoot, 'README.md'), deployReadme)
+删除 \`app/api/data/runtime.json\` 后 \`pm2 restart skill-store-api\`，浏览器会再次进入安装向导。
 
-  // 拷贝 promote-admin 脚本（已支持读取 runtime.json）
+## 系统要求
+
+- Node.js ${REQUIRED_NODE_MAJOR}+（脚本自动装）
+- MySQL 8.0+（推荐）/ 5.7+ 也可
+- 已运行 MySQL（本机或同网段）
+`
+  writeFileSync(path.join(stageRoot, 'README.md'), readme)
+
+  // promote-admin 脚本 —— 部署环境下 apiRoot 推断为 stageRoot/app/api。
   const scriptsStage = path.join(stageRoot, 'scripts')
   mkdirSync(scriptsStage, { recursive: true })
-  // 部署环境下 repoRoot 即 stageRoot；apiRoot 推断为 stageRoot/api。
-  // promote-admin.mjs 原本假设 apiRoot = repoRoot/apps/api，所以这里写一份适配的副本。
   const promoteAdmin = `import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const repoRoot = path.resolve(__dirname, '..')
-const apiRoot = path.join(repoRoot, 'api')
+const stageRoot = path.resolve(__dirname, '..')
+const apiRoot = path.join(stageRoot, 'app', 'api')
 
 function loadRuntimeConfig() {
   const file = path.join(apiRoot, 'data', 'runtime.json')
@@ -299,6 +337,7 @@ try {
 function writeInstallScripts() {
   const installSh = `#!/usr/bin/env bash
 # Skill Store 一键部署脚本（Linux / macOS）
+# 解压目录布局：./app/{api,web,ecosystem.config.cjs} + 本脚本
 set -euo pipefail
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "\${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -310,7 +349,12 @@ ok()   { printf '\\033[32m[ ok ]\\033[0m %s\\n' "$*"; }
 warn() { printf '\\033[33m[warn]\\033[0m %s\\n' "$*"; }
 err()  { printf '\\033[31m[err ]\\033[0m %s\\n' "$*" >&2; }
 
-REQUIRED_NODE_MAJOR=20
+REQUIRED_NODE_MAJOR=${REQUIRED_NODE_MAJOR}
+
+if [ ! -d "app" ]; then
+  err "未找到 ./app 目录。请确认你在解压后的 skill-store/ 根目录下运行本脚本。"
+  exit 1
+fi
 
 has() { command -v "$1" >/dev/null 2>&1; }
 
@@ -390,15 +434,18 @@ ensure_pm2() {
 install_api_deps() {
   info "安装后端运行时依赖（首次需要 1-3 分钟）"
   (
-    cd api
+    cd app/api
     npm install --omit=dev --no-audit --no-fund
   )
   ok "后端依赖安装完成"
 }
 
 start_app() {
-  info "用 pm2 启动 skill-store"
-  pm2 start ecosystem.config.cjs --update-env
+  info "用 pm2 启动 skill-store（cwd: ./app）"
+  (
+    cd app
+    pm2 start ecosystem.config.cjs --update-env
+  )
   pm2 save || true
   info "尝试设置 pm2 开机自启（可能需要按 pm2 提示再跑一条 sudo 命令）"
   pm2 startup || true
@@ -412,8 +459,8 @@ print_done() {
   bold ""
   bold "  下一步："
   bold "    1. 在浏览器打开 http://<服务器 IP>:3000"
-  bold "    2. 按页面提示完成安装向导（填写 MySQL 等）"
-  bold "    3. 注册首个账号 → 访问 /setup-admin 设为管理员"
+  bold "    2. 按页面提示完成安装向导（MySQL + SMTP + 管理员密钥）"
+  bold "    3. 注册首个账号 → 邮箱验证 → 访问 /setup-admin 设为管理员"
   bold ""
   bold "  日志: pm2 logs"
   bold "  状态: pm2 status"
@@ -429,6 +476,7 @@ print_done
 `
 
   const installPs1 = `# Skill Store 一键部署脚本（Windows / PowerShell）
+# 解压目录布局：./app/{api,web,ecosystem.config.cjs} + 本脚本
 $ErrorActionPreference = 'Stop'
 Set-Location -Path $PSScriptRoot
 
@@ -437,7 +485,12 @@ function Write-Ok($msg)    { Write-Host "[ ok ] $msg"  -ForegroundColor Green }
 function Write-Warn2($msg) { Write-Host "[warn] $msg"  -ForegroundColor Yellow }
 function Write-Err2($msg)  { Write-Host "[err ] $msg"  -ForegroundColor Red }
 
-$RequiredNodeMajor = 20
+$RequiredNodeMajor = ${REQUIRED_NODE_MAJOR}
+
+if (-not (Test-Path 'app')) {
+  Write-Err2 '未找到 ./app 目录。请确认你在解压后的 skill-store/ 根目录下运行本脚本。'
+  exit 1
+}
 
 function Has-Cmd($name) {
   $null -ne (Get-Command $name -ErrorAction SilentlyContinue)
@@ -463,7 +516,7 @@ function Ensure-Node {
     Write-Info '通过 Chocolatey 安装 nodejs-lts'
     choco install -y nodejs-lts
   } else {
-    Write-Err2 '未检测到 winget 或 Chocolatey。请手动安装 Node.js 20+（https://nodejs.org/）后重试。'
+    Write-Err2 '未检测到 winget 或 Chocolatey。请手动安装 Node.js 22+（https://nodejs.org/）后重试。'
     exit 1
   }
 
@@ -485,7 +538,7 @@ function Ensure-Pm2 {
 
 function Install-ApiDeps {
   Write-Info '安装后端运行时依赖（首次需要 1-3 分钟）'
-  Push-Location api
+  Push-Location app/api
   try {
     npm install --omit=dev --no-audit --no-fund
     if ($LASTEXITCODE -ne 0) { throw 'npm install failed' }
@@ -496,8 +549,13 @@ function Install-ApiDeps {
 }
 
 function Start-App {
-  Write-Info '用 pm2 启动 skill-store'
-  pm2 start ecosystem.config.cjs --update-env
+  Write-Info '用 pm2 启动 skill-store（cwd: ./app）'
+  Push-Location app
+  try {
+    pm2 start ecosystem.config.cjs --update-env
+  } finally {
+    Pop-Location
+  }
   pm2 save | Out-Null
   Write-Info '如需开机自启，请单独运行: pm2-startup install （Windows 推荐用 pm2-windows-service 或 nssm）'
 }
@@ -510,8 +568,8 @@ function Print-Done {
   Write-Host ''
   Write-Host '  下一步：'
   Write-Host '    1. 在浏览器打开 http://<服务器 IP>:3000'
-  Write-Host '    2. 按页面提示完成安装向导（填写 MySQL 等）'
-  Write-Host '    3. 注册首个账号 -> 访问 /setup-admin 设为管理员'
+  Write-Host '    2. 按页面提示完成安装向导（MySQL + SMTP + 管理员密钥）'
+  Write-Host '    3. 注册首个账号 -> 邮箱验证 -> 访问 /setup-admin 设为管理员'
   Write-Host ''
   Write-Host '  日志: pm2 logs'
   Write-Host '  状态: pm2 status'
@@ -530,6 +588,210 @@ Print-Done
   writeFileSync(shPath, installSh, { mode: 0o755 })
   try { chmodSync(shPath, 0o755) } catch {}
   writeFileSync(path.join(stageRoot, 'install.ps1'), installPs1)
+}
+
+function writeCreateDbScripts() {
+  // bash: 交互式建库 + 创建应用账号
+  const createDbSh = `#!/usr/bin/env bash
+# Skill Store 一键建库脚本（Linux / macOS）
+# 你只需要提供 MySQL root（或具备 CREATE/GRANT 权限的账户）的连接信息，
+# 脚本会建好两个库（主库 + Prisma 影子库），并创建一个只对这两个库有权限的应用用户。
+set -euo pipefail
+
+SCRIPT_DIR="$( cd -- "$( dirname -- "\${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+cd "$SCRIPT_DIR"
+
+info() { printf '\\033[36m[create-db]\\033[0m %s\\n' "$*"; }
+ok()   { printf '\\033[32m[  ok ]\\033[0m %s\\n' "$*"; }
+err()  { printf '\\033[31m[ err ]\\033[0m %s\\n' "$*" >&2; }
+
+if ! command -v mysql >/dev/null 2>&1; then
+  err "未检测到 mysql 客户端。请先安装："
+  err "  Debian/Ubuntu:  sudo apt install -y mysql-client"
+  err "  RHEL/CentOS:    sudo yum install -y mysql"
+  err "  macOS:          brew install mysql-client"
+  exit 1
+fi
+
+prompt() {
+  # $1 = prompt, $2 = default (optional), $3 = "secret" to hide input
+  local var
+  if [ "\${3:-}" = "secret" ]; then
+    read -r -s -p "$1: " var; echo
+  else
+    if [ -n "\${2:-}" ]; then
+      read -r -p "$1 [\${2}]: " var
+      var="\${var:-$2}"
+    else
+      read -r -p "$1: " var
+    fi
+  fi
+  printf '%s' "$var"
+}
+
+gen_password() {
+  # 18 字节 base64 → 24 字符的密码（去掉换行）
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -base64 18 | tr -d '\\n=+/'
+  else
+    head -c 18 /dev/urandom | base64 | tr -d '\\n=+/'
+  fi
+}
+
+echo "=== Skill Store 数据库初始化 ==="
+echo "提示：所有项可按回车使用默认值。MySQL root 密码不会回显。"
+echo
+
+HOST=$(prompt "MySQL 主机" "127.0.0.1")
+PORT=$(prompt "MySQL 端口" "3306")
+ROOT_USER=$(prompt "管理账号（具备 CREATE/GRANT 权限）" "root")
+ROOT_PASS=$(prompt "管理账号密码" "" "secret")
+
+DB_NAME=$(prompt "主库名" "skill_store")
+SHADOW_NAME=$(prompt "影子库名（Prisma 迁移用）" "\${DB_NAME}_shadow")
+APP_USER=$(prompt "应用账号名" "skill_store")
+DEFAULT_APP_PASS=$(gen_password)
+APP_PASS_INPUT=$(prompt "应用账号密码（回车则使用随机生成）" "" "secret")
+APP_PASS="\${APP_PASS_INPUT:-$DEFAULT_APP_PASS}"
+
+APP_HOST_PATTERN=$(prompt "应用账号允许的连接来源（% 表示任意 IP）" "%")
+
+info "测试连接到 \${ROOT_USER}@\${HOST}:\${PORT}..."
+if ! mysql -h "$HOST" -P "$PORT" -u "$ROOT_USER" -p"$ROOT_PASS" -e "SELECT 1" >/dev/null 2>&1; then
+  err "连接失败：请确认主机/端口/账号/密码是否正确，且 MySQL 允许该账号远程访问"
+  exit 1
+fi
+ok "连接成功"
+
+info "建库 + 建用户..."
+mysql -h "$HOST" -P "$PORT" -u "$ROOT_USER" -p"$ROOT_PASS" <<SQL
+CREATE DATABASE IF NOT EXISTS \\\`\${DB_NAME}\\\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS \\\`\${SHADOW_NAME}\\\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '\${APP_USER}'@'\${APP_HOST_PATTERN}' IDENTIFIED BY '\${APP_PASS}';
+ALTER USER '\${APP_USER}'@'\${APP_HOST_PATTERN}' IDENTIFIED BY '\${APP_PASS}';
+GRANT ALL PRIVILEGES ON \\\`\${DB_NAME}\\\`.* TO '\${APP_USER}'@'\${APP_HOST_PATTERN}';
+GRANT ALL PRIVILEGES ON \\\`\${SHADOW_NAME}\\\`.* TO '\${APP_USER}'@'\${APP_HOST_PATTERN}';
+FLUSH PRIVILEGES;
+SQL
+ok "完成"
+
+cat <<INFO
+
+══════════════════════════════════════════════════════════
+  Skill Store 数据库已就绪 ✅
+══════════════════════════════════════════════════════════
+
+请在浏览器安装向导（/setup）中填入：
+
+  MySQL 主机      : \${HOST}
+  端口            : \${PORT}
+  用户名          : \${APP_USER}
+  密码            : \${APP_PASS}
+  主数据库名      : \${DB_NAME}
+  Shadow 数据库名 : \${SHADOW_NAME}
+
+请妥善保管以上信息（尤其是密码）。
+INFO
+`
+
+  const createDbPs1 = `# Skill Store 一键建库脚本（Windows / PowerShell）
+$ErrorActionPreference = 'Stop'
+Set-Location -Path $PSScriptRoot
+
+function Info($m) { Write-Host "[create-db] $m" -ForegroundColor Cyan }
+function Ok($m)   { Write-Host "[  ok ] $m"     -ForegroundColor Green }
+function Err($m)  { Write-Host "[ err ] $m"     -ForegroundColor Red }
+
+if (-not (Get-Command mysql -ErrorAction SilentlyContinue)) {
+  Err 'mysql 客户端未安装或不在 PATH。请安装 MySQL Shell 或 mysql client 后重试。'
+  exit 1
+}
+
+function Prompt-Default([string]$label, [string]$default) {
+  if ($default) {
+    $val = Read-Host "$label [$default]"
+    if ([string]::IsNullOrWhiteSpace($val)) { return $default }
+    return $val
+  }
+  return Read-Host $label
+}
+
+function Prompt-Secret([string]$label) {
+  $secure = Read-Host -AsSecureString $label
+  return [System.Net.NetworkCredential]::new('', $secure).Password
+}
+
+function New-RandomPassword {
+  $bytes = New-Object byte[] 18
+  [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+  return ([Convert]::ToBase64String($bytes)) -replace '[+/=\\r\\n]', ''
+}
+
+Write-Host '=== Skill Store 数据库初始化 ===' -ForegroundColor Cyan
+Write-Host '提示：所有项可按回车使用默认值。MySQL root 密码不会回显。'
+Write-Host ''
+
+$Hostname = Prompt-Default 'MySQL 主机' '127.0.0.1'
+$Port     = Prompt-Default 'MySQL 端口' '3306'
+$RootUser = Prompt-Default '管理账号（具备 CREATE/GRANT 权限）' 'root'
+$RootPass = Prompt-Secret  '管理账号密码'
+
+$DbName     = Prompt-Default '主库名' 'skill_store'
+$ShadowName = Prompt-Default '影子库名（Prisma 迁移用）' ($DbName + '_shadow')
+$AppUser    = Prompt-Default '应用账号名' 'skill_store'
+
+$DefaultAppPass = New-RandomPassword
+$AppPassIn = Prompt-Secret '应用账号密码（直接回车则使用随机生成）'
+$AppPass   = if ([string]::IsNullOrWhiteSpace($AppPassIn)) { $DefaultAppPass } else { $AppPassIn }
+$AppHostPattern = Prompt-Default '应用账号允许的连接来源（% 表示任意 IP）' '%'
+
+Info ("测试连接到 {0}@{1}:{2}..." -f $RootUser, $Hostname, $Port)
+$null = & mysql "-h$Hostname" "-P$Port" "-u$RootUser" ("-p" + $RootPass) -e 'SELECT 1' 2>$null
+if ($LASTEXITCODE -ne 0) {
+  Err '连接失败：请确认主机/端口/账号/密码是否正确，且 MySQL 允许该账号远程访问'
+  exit 1
+}
+Ok '连接成功'
+
+$bt = [char]96   # backtick — used to quote MySQL identifiers
+$sql = @"
+CREATE DATABASE IF NOT EXISTS $bt$DbName$bt CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS $bt$ShadowName$bt CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '$AppUser'@'$AppHostPattern' IDENTIFIED BY '$AppPass';
+ALTER USER '$AppUser'@'$AppHostPattern' IDENTIFIED BY '$AppPass';
+GRANT ALL PRIVILEGES ON $bt$DbName$bt.* TO '$AppUser'@'$AppHostPattern';
+GRANT ALL PRIVILEGES ON $bt$ShadowName$bt.* TO '$AppUser'@'$AppHostPattern';
+FLUSH PRIVILEGES;
+"@
+
+Info '建库 + 建用户...'
+$sql | & mysql "-h$Hostname" "-P$Port" "-u$RootUser" ("-p" + $RootPass)
+if ($LASTEXITCODE -ne 0) {
+  Err '执行 SQL 失败'
+  exit 1
+}
+Ok '完成'
+
+Write-Host ''
+Write-Host '══════════════════════════════════════════════════════════' -ForegroundColor Cyan
+Write-Host '  Skill Store 数据库已就绪 ✅' -ForegroundColor Cyan
+Write-Host '══════════════════════════════════════════════════════════' -ForegroundColor Cyan
+Write-Host ''
+Write-Host '请在浏览器安装向导（/setup）中填入：'
+Write-Host ("  MySQL 主机      : {0}" -f $Hostname)
+Write-Host ("  端口            : {0}" -f $Port)
+Write-Host ("  用户名          : {0}" -f $AppUser)
+Write-Host ("  密码            : {0}" -f $AppPass)
+Write-Host ("  主数据库名      : {0}" -f $DbName)
+Write-Host ("  Shadow 数据库名 : {0}" -f $ShadowName)
+Write-Host ''
+Write-Host '请妥善保管以上信息（尤其是密码）。'
+`
+
+  const shPath = path.join(stageRoot, 'create-db.sh')
+  writeFileSync(shPath, createDbSh, { mode: 0o755 })
+  try { chmodSync(shPath, 0o755) } catch {}
+  writeFileSync(path.join(stageRoot, 'create-db.ps1'), createDbPs1)
 }
 
 function dirSize(p) {
@@ -574,8 +836,10 @@ async function main() {
   ensureCleanStage()
   deployApi()
   copyWebStandalone()
-  writeReleaseFiles()
+  writeAppEcosystem()
+  writeReleaseDocs()
   writeInstallScripts()
+  writeCreateDbScripts()
 
   const totalMb = (dirSize(stageRoot) / 1024 / 1024).toFixed(1)
   log(`stage size: ${totalMb} MB`)
