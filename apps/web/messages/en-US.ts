@@ -479,6 +479,8 @@ export const enUS = {
     viewSource: 'View source',
     file: 'Files',
     lineCount: '{lines} lines · {size}',
+    enterFullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen (Esc)',
   },
   docs: {
     title: 'Developer Docs',

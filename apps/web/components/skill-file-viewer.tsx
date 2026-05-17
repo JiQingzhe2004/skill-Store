@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronRight, File, Folder, FolderOpen, ArrowLeft, FileText, Code, BookOpen } from 'lucide-react'
+import { ChevronRight, File, Folder, FolderOpen, ArrowLeft, FileText, Code, BookOpen, Maximize2, Minimize2 } from 'lucide-react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneLight, oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import ReactMarkdown from 'react-markdown'
@@ -340,19 +340,43 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
   const lang = selectedFile ? getLang(selectedFile.path) : 'text'
   const isMarkdown = lang === 'markdown'
   const [viewRaw, setViewRaw] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
+
+  // Esc 退出全屏 + 全屏时锁定 body 滚动
+  useEffect(() => {
+    if (!fullscreen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setFullscreen(false) }
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [fullscreen])
 
   return (
-    <div className="mt-6 rounded-lg border border-border/60 overflow-hidden bg-white dark:bg-zinc-900">
+    <div
+      className={cn(
+        'rounded-lg border border-border/60 overflow-hidden bg-white dark:bg-zinc-900',
+        fullscreen
+          ? 'fixed inset-0 z-50 m-0 rounded-none border-0 flex flex-col'
+          : 'mt-6',
+      )}
+    >
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/60 bg-muted/30">
         <span className="text-sm font-medium text-muted-foreground">{m.fileViewer.files.replace('{count}', String(files.length))}</span>
         {selectedFile && (
-          <span className="text-xs text-muted-foreground font-mono">{selectedFile.path}</span>
+          <span className="text-xs text-muted-foreground font-mono truncate ml-3">{selectedFile.path}</span>
         )}
       </div>
 
       {/* Body: left tree + right content */}
-      <div className="flex" style={{ height: '520px' }}>
+      <div
+        className={cn('flex', fullscreen && 'flex-1 min-h-0')}
+        style={fullscreen ? undefined : { height: '520px' }}
+      >
         {/* Left: file tree */}
         <div className="w-56 shrink-0 border-r border-border/60 overflow-y-auto py-1">
           {sortedRoots.map(node => (
@@ -387,6 +411,16 @@ export function SkillFileViewer({ files }: { files: FileEntry[] }) {
           ) : (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">{m.fileViewer.selectFile}</div>
           )}
+
+          {/* 右下角全屏按钮 */}
+          <button
+            type="button"
+            title={fullscreen ? m.fileViewer.exitFullscreen : m.fileViewer.enterFullscreen}
+            onClick={() => setFullscreen(v => !v)}
+            className="absolute bottom-3 right-3 z-20 flex items-center justify-center w-9 h-9 rounded-full bg-background/90 backdrop-blur border border-border/60 shadow-md hover:bg-muted hover:scale-105 transition"
+          >
+            {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
         </div>
       </div>
     </div>

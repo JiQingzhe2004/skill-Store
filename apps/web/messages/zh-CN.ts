@@ -479,6 +479,8 @@ export const zhCN = {
     viewSource: '查看源码',
     file: '文件',
     lineCount: '{lines} 行 · {size}',
+    enterFullscreen: '全屏查看',
+    exitFullscreen: '退出全屏（Esc）',
   },
   docs: {
     title: '开发者文档',

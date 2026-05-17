@@ -9,4 +9,6 @@ export default () => ({
   smtpUser: process.env.SMTP_USER ?? '',
   smtpPass: process.env.SMTP_PASS ?? '',
   smtpFrom: process.env.SMTP_FROM ?? 'Skill Store <no-reply@skill-store.local>',
+  // 未显式设置 SMTP_HOST 时，开发模式把验证码直接打到控制台，避免本地必须搭 SMTP
+  smtpEnabled: !!process.env.SMTP_HOST,
 })

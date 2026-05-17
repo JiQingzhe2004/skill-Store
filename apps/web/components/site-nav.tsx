@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Store, LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus, Star, Shield, Key, Package } from 'lucide-react'
+import { LogIn, UserPlus, LogOut, LayoutDashboard, User, Settings, ChevronDown, Boxes, Plus, Star, Shield, Key, Package } from 'lucide-react'
 import { Button } from './ui/button'
+import { BrandLogo } from './brand-logo'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,7 +66,7 @@ export function SiteNav({ user = null, initialAuthView = null, initialAuthEmail 
     <>
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 px-6 py-3.5 flex items-center justify-between bg-background/75 backdrop-blur-md">
         <Link href={`/${locale}`} className="flex items-center gap-2 font-semibold text-base tracking-tight hover:opacity-80 transition-opacity">
-          <Store className="w-4 h-4" />
+          <BrandLogo className="w-5 h-5" idSuffix="nav" />
           Skill Store
         </Link>
         <nav className="hidden sm:flex items-center gap-1 ml-6">

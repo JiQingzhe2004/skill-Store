@@ -17,6 +17,21 @@ export class MailerService {
   constructor(private readonly configService: ConfigService) {}
 
   async sendCodeEmail(params: CodeEmailParams) {
+    // 未配置 SMTP_HOST 时，把验证码打到控制台，便于本地开发
+    if (!this.configService.get<boolean>('smtpEnabled')) {
+      this.logger.warn(
+        `\n` +
+        `╭─────────────────────────────────────────────╮\n` +
+        `│  📮 [DEV] SMTP 未配置，验证码仅打印到控制台  │\n` +
+        `├─────────────────────────────────────────────┤\n` +
+        `│  收件人: ${params.to.padEnd(33, ' ')}│\n` +
+        `│  用途:   ${String(params.purpose).padEnd(33, ' ')}│\n` +
+        `│  验证码: ${params.code.padEnd(33, ' ')}│\n` +
+        `╰─────────────────────────────────────────────╯`,
+      )
+      return
+    }
+
     const transporter = this.createTransporter()
 
     const isRegister = params.purpose === EmailCodePurpose.REGISTER
