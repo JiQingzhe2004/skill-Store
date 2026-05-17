@@ -82,7 +82,7 @@ export class AdminService {
         take: pageSize,
         select: {
           id: true, email: true, username: true, role: true,
-          isEmailVerified: true, createdAt: true,
+          createdAt: true,
           avatar: true, isBanned: true, bannedUntil: true, banReason: true,
           _count: { select: { skills: true } },
         },

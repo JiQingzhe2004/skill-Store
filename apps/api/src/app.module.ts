@@ -9,7 +9,6 @@ import { UsersModule } from './users/users.module'
 import { AdminModule } from './admin/admin.module'
 import { ApiClientsModule } from './api-clients/api-clients.module'
 import { PublicApiModule } from './public-api/public-api.module'
-import { MailerModule } from './mailer/mailer.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { RateLimitModule } from './rate-limit/rate-limit.module'
 import { SetupModule } from './setup/setup.module'
@@ -24,7 +23,6 @@ import { SetupModule } from './setup/setup.module'
       validate: validateEnv,
     }),
     PrismaModule,
-    MailerModule,
     RateLimitModule,
     AuthModule,
     SkillsModule,

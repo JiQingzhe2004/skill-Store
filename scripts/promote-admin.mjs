@@ -1,10 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PrismaClient, UserRole } from '@prisma/client'
+import { createRequire } from 'node:module'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
+const apiRoot = path.join(repoRoot, 'apps', 'api')
 
 function loadEnvFile(envPath) {
   if (!existsSync(envPath)) return
@@ -20,8 +21,35 @@ function loadEnvFile(envPath) {
   }
 }
 
+function loadRuntimeConfig() {
+  const file = path.join(apiRoot, 'data', 'runtime.json')
+  if (!existsSync(file)) return
+  try {
+    const cfg = JSON.parse(readFileSync(file, 'utf8'))
+    const map = {
+      databaseUrl: 'DATABASE_URL',
+      shadowDatabaseUrl: 'SHADOW_DATABASE_URL',
+      jwtAccessSecret: 'JWT_ACCESS_SECRET',
+      jwtRefreshSecret: 'JWT_REFRESH_SECRET',
+      appUrl: 'APP_URL',
+      adminSetupSecret: 'ADMIN_SETUP_SECRET',
+    }
+    for (const [key, envKey] of Object.entries(map)) {
+      if (cfg[key] && !process.env[envKey]) process.env[envKey] = String(cfg[key])
+    }
+  } catch {
+    // ignore
+  }
+}
+
 loadEnvFile(path.join(repoRoot, '.env'))
-loadEnvFile(path.join(repoRoot, 'apps', 'api', '.env'))
+loadEnvFile(path.join(apiRoot, '.env'))
+loadRuntimeConfig()
+
+// Resolve @prisma/client from the API package — works both in monorepo and release tree.
+const require = createRequire(import.meta.url)
+const prismaClientPath = require.resolve('@prisma/client', { paths: [apiRoot, repoRoot] })
+const { PrismaClient, UserRole } = await import(prismaClientPath)
 
 const identifier = process.argv[2]
 const force = process.argv.includes('--force')

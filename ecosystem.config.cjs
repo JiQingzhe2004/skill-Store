@@ -1,11 +1,13 @@
 /**
- * PM2 配置（1Panel "Node.js 项目" 也兼容）
- * 启动：pm2 start ecosystem.config.cjs
- * 重启：pm2 restart ecosystem.config.cjs
- * 查看：pm2 status / pm2 logs
+ * PM2 配置（开发 / 直接从仓库部署用）
  *
- * 第一次部署时，API 在没有 apps/api/data/runtime.json 的情况下会进入 SETUP 模式，
- * 用浏览器访问 web 即可看到安装向导。提交后 API 会自动 exit(0)，PM2 自动重启进入正常模式。
+ * 生产部署推荐用打包后的 release/skill-store/ecosystem.config.cjs：
+ *   pnpm release            构建并打 release/skill-store-<version>.tar.gz
+ *   上传 tar.gz 到服务器
+ *   tar -xzf skill-store-<version>.tar.gz && cd skill-store
+ *   ./install.sh            （Linux/macOS；Windows 用 install.ps1）
+ *
+ * 第一次启动 API 会进入 SETUP 模式，浏览器访问完成安装向导即可。
  */
 module.exports = {
   apps: [

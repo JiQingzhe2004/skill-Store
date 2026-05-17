@@ -23,7 +23,6 @@ type UserProfile = {
   avatar: string | null
   bio: string | null
   role: string
-  isEmailVerified: boolean
   createdAt: string
 } | null
 

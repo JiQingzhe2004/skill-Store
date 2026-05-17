@@ -1,18 +1,12 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
-import { EmailCodePurpose, User, UserRole } from '@prisma/client'
+import { User, UserRole } from '@prisma/client'
 
 import { AppException } from '../common/exceptions/app.exception'
 import { JwtUser } from '../common/types/jwt-user'
 import { normalizeEmail } from '../common/utils/request'
-import { MailerService } from '../mailer/mailer.service'
 import { PrismaService } from '../prisma/prisma.service'
-import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { LoginDto } from './dto/login.dto'
 import { RegisterDto } from './dto/register.dto'
-import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto'
-import { ResetPasswordDto } from './dto/reset-password.dto'
-import { VerifyEmailDto } from './dto/verify-email.dto'
-import { EmailCodeService } from './email-code.service'
 import { PasswordService } from './password.service'
 import { TokenService } from './token.service'
 
@@ -21,7 +15,6 @@ type PublicAuthUser = {
   email: string
   username: string
   role: UserRole
-  isEmailVerified: boolean
   avatar?: string | null
 }
 
@@ -31,96 +24,28 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly passwordService: PasswordService,
     private readonly tokenService: TokenService,
-    private readonly emailCodeService: EmailCodeService,
-    private readonly mailerService: MailerService,
   ) {}
 
   async register(dto: RegisterDto) {
     const email = normalizeEmail(dto.email)
     const existingUser = await this.prisma.user.findUnique({ where: { email } })
 
-    if (existingUser?.isEmailVerified) {
+    if (existingUser) {
       throw new AppException(HttpStatus.CONFLICT, 'EMAIL_ALREADY_REGISTERED', '该邮箱已注册')
     }
 
     const passwordHash = await this.passwordService.hashPassword(dto.password)
 
-    const user = existingUser
-      ? await this.prisma.user.update({
-          where: { id: existingUser.id },
-          data: {
-            username: dto.username.trim(),
-            passwordHash,
-          },
-        })
-      : await this.prisma.user.create({
-          data: {
-            email,
-            username: dto.username.trim(),
-            passwordHash,
-            role: UserRole.USER,
-          },
-        })
-
-    const code = await this.emailCodeService.createCode(user.id, EmailCodePurpose.REGISTER)
-
-    await this.mailerService.sendCodeEmail({
-      to: user.email,
-      code,
-      purpose: EmailCodePurpose.REGISTER,
-    })
-
-    return {
-      email: user.email,
-      message: '验证码已发送',
-    }
-  }
-
-  async resendVerificationCode(dto: ResendVerificationCodeDto) {
-    const email = normalizeEmail(dto.email)
-    const user = await this.prisma.user.findUnique({ where: { email } })
-
-    if (user && !user.isEmailVerified) {
-      const code = await this.emailCodeService.createCode(user.id, EmailCodePurpose.REGISTER)
-
-      await this.mailerService.sendCodeEmail({
-        to: user.email,
-        code,
-        purpose: EmailCodePurpose.REGISTER,
-      })
-    }
-
-    return {
-      message: '如果该邮箱需要验证，验证码已发送',
-    }
-  }
-
-  async verifyEmail(dto: VerifyEmailDto) {
-    const email = normalizeEmail(dto.email)
-    const user = await this.prisma.user.findUnique({ where: { email } })
-
-    if (!user) {
-      throw new AppException(HttpStatus.BAD_REQUEST, 'CODE_INVALID', '验证码无效')
-    }
-
-    if (user.isEmailVerified) {
-      return {
-        message: '邮箱已验证',
-      }
-    }
-
-    await this.emailCodeService.consumeCode(user.id, EmailCodePurpose.REGISTER, dto.code)
-
-    await this.prisma.user.update({
-      where: { id: user.id },
+    const user = await this.prisma.user.create({
       data: {
-        isEmailVerified: true,
+        email,
+        username: dto.username.trim(),
+        passwordHash,
+        role: UserRole.USER,
       },
     })
 
-    return {
-      message: '邮箱验证成功',
-    }
+    return this.buildAuthResult(user)
   }
 
   async login(dto: LoginDto) {
@@ -137,10 +62,6 @@ export class AuthService {
       throw new AppException(HttpStatus.UNAUTHORIZED, 'INVALID_CREDENTIALS', '邮箱或密码错误')
     }
 
-    if (!user.isEmailVerified) {
-      throw new AppException(HttpStatus.FORBIDDEN, 'EMAIL_NOT_VERIFIED', '请先完成邮箱验证')
-    }
-
     if (user.isBanned) {
       const until = user.bannedUntil
       if (!until || until > new Date()) {
@@ -148,7 +69,6 @@ export class AuthService {
         const reason = user.banReason ? ` 原因：${user.banReason}` : ''
         throw new AppException(HttpStatus.FORBIDDEN, 'USER_BANNED', `账号已被封禁${untilStr}${reason}`)
       }
-      // 封禁已到期，自动解封
       await this.prisma.user.update({ where: { id: user.id }, data: { isBanned: false, bannedUntil: null, banReason: null } })
     }
 
@@ -169,10 +89,6 @@ export class AuthService {
       throw new AppException(HttpStatus.UNAUTHORIZED, 'UNAUTHORIZED', '登录状态已失效')
     }
 
-    if (!user.isEmailVerified) {
-      throw new AppException(HttpStatus.FORBIDDEN, 'EMAIL_NOT_VERIFIED', '请先完成邮箱验证')
-    }
-
     return this.buildAuthResult(user)
   }
 
@@ -184,49 +100,6 @@ export class AuthService {
     }
 
     return this.toPublicUser(user)
-  }
-
-  async forgotPassword(dto: ForgotPasswordDto) {
-    const email = normalizeEmail(dto.email)
-    const user = await this.prisma.user.findUnique({ where: { email } })
-
-    if (user) {
-      const code = await this.emailCodeService.createCode(user.id, EmailCodePurpose.RESET_PASSWORD)
-
-      await this.mailerService.sendCodeEmail({
-        to: user.email,
-        code,
-        purpose: EmailCodePurpose.RESET_PASSWORD,
-      })
-    }
-
-    return {
-      message: '如果该邮箱存在，重置验证码已发送',
-    }
-  }
-
-  async resetPassword(dto: ResetPasswordDto) {
-    const email = normalizeEmail(dto.email)
-    const user = await this.prisma.user.findUnique({ where: { email } })
-
-    if (!user) {
-      throw new AppException(HttpStatus.BAD_REQUEST, 'CODE_INVALID', '验证码无效')
-    }
-
-    await this.emailCodeService.consumeCode(user.id, EmailCodePurpose.RESET_PASSWORD, dto.code)
-
-    const passwordHash = await this.passwordService.hashPassword(dto.password)
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-      },
-    })
-
-    return {
-      message: '密码重置成功',
-    }
   }
 
   private async buildAuthResult(user: User) {
@@ -246,7 +119,6 @@ export class AuthService {
       email: user.email,
       username: user.username,
       role: user.role,
-      isEmailVerified: user.isEmailVerified,
       avatar: user.avatar ?? null,
     }
   }

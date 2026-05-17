@@ -10,7 +10,6 @@ type AdminUser = {
   email: string
   username: string
   role: string
-  isEmailVerified: boolean
   isBanned: boolean
   bannedUntil: string | null
   banReason: string | null

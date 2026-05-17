@@ -25,13 +25,6 @@ export interface DbConnection {
 export interface SubmitSetupPayload {
   db: DbConnection
   appUrl: string
-  smtp: {
-    host: string
-    port: number
-    user?: string
-    pass?: string
-    from: string
-  }
   adminSetupSecret: string
   jwtAccessSecret?: string
   jwtRefreshSecret?: string
@@ -91,11 +84,6 @@ export class SetupService {
       appUrl: payload.appUrl,
       jwtAccessSecret: payload.jwtAccessSecret || randomBytes(48).toString('hex'),
       jwtRefreshSecret: payload.jwtRefreshSecret || randomBytes(48).toString('hex'),
-      smtpHost: payload.smtp.host,
-      smtpPort: payload.smtp.port,
-      smtpUser: payload.smtp.user,
-      smtpPass: payload.smtp.pass,
-      smtpFrom: payload.smtp.from,
       adminSetupSecret: payload.adminSetupSecret,
     }
 
@@ -123,11 +111,11 @@ export class SetupService {
   private runMigrateDeploy(databaseUrl: string, shadowDatabaseUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const apiRoot = path.resolve(__dirname, '..', '..')
-      const args = ['exec', 'prisma', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma']
-      const child = spawn('pnpm', args, {
+      const prismaEntry = require.resolve('prisma/build/index.js', { paths: [apiRoot] })
+      const args = [prismaEntry, 'migrate', 'deploy', '--schema', 'prisma/schema.prisma']
+      const child = spawn(process.execPath, args, {
         cwd: apiRoot,
         stdio: 'inherit',
-        shell: process.platform === 'win32',
         env: {
           ...process.env,
           DATABASE_URL: databaseUrl,

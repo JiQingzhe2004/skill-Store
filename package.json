@@ -21,6 +21,8 @@
     "prisma:migrate:dev": "pnpm --filter @skill-store/api prisma:migrate:dev",
     "prisma:migrate:deploy": "pnpm --filter @skill-store/api prisma:migrate:deploy",
     "admin:promote": "node scripts/promote-admin.mjs",
+    "release": "node scripts/package.mjs",
+    "release:fast": "node scripts/package.mjs --no-build",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -9,7 +9,7 @@ import { fetchCurrentUser } from '../../lib/server-auth'
 import { getMessages, type Locale } from '../../messages'
 import type { AuthView } from '../../components/auth-dialog'
 
-const validAuthViews: AuthView[] = ['login', 'register', 'forgot-password', 'reset-password', 'verify-email']
+const validAuthViews: AuthView[] = ['login', 'register']
 
 type HomePageProps = {
   params: Promise<{ locale: string }>

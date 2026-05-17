@@ -2,9 +2,6 @@ const requiredKeys = [
   'DATABASE_URL',
   'JWT_ACCESS_SECRET',
   'JWT_REFRESH_SECRET',
-  'SMTP_HOST',
-  'SMTP_PORT',
-  'SMTP_FROM',
   'APP_URL',
 ]
 

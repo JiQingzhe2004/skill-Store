@@ -17,7 +17,6 @@ export class UsersService {
         avatar: true,
         bio: true,
         role: true,
-        isEmailVerified: true,
         createdAt: true,
       },
     })
@@ -107,7 +106,6 @@ export class UsersService {
         avatar: true,
         bio: true,
         role: true,
-        isEmailVerified: true,
         createdAt: true,
       },
     })

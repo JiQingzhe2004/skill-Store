@@ -8,11 +8,6 @@ export interface RuntimeConfig {
   jwtAccessSecret: string
   jwtRefreshSecret: string
   appUrl: string
-  smtpHost: string
-  smtpPort: number
-  smtpUser?: string
-  smtpPass?: string
-  smtpFrom: string
   adminSetupSecret?: string
 }
 
@@ -22,11 +17,6 @@ const ENV_KEYS: Record<keyof Omit<RuntimeConfig, 'setupComplete'>, string> = {
   jwtAccessSecret: 'JWT_ACCESS_SECRET',
   jwtRefreshSecret: 'JWT_REFRESH_SECRET',
   appUrl: 'APP_URL',
-  smtpHost: 'SMTP_HOST',
-  smtpPort: 'SMTP_PORT',
-  smtpUser: 'SMTP_USER',
-  smtpPass: 'SMTP_PASS',
-  smtpFrom: 'SMTP_FROM',
   adminSetupSecret: 'ADMIN_SETUP_SECRET',
 }
 
